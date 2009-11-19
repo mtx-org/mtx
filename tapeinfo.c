@@ -933,7 +933,6 @@ int main(int argc, char **argv)
 
 	if (argc != 3)
 	{
-		fprintf(stderr,"argc=%d",argc);
 		usage();
 	}
 
