@@ -1,0 +1,305 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-type" content="text/html;charset=UTF-8" />
+
+    <title>MTX FAQ - Operational Issues</title>
+
+    <style type="text/css">
+      <!--
+        TH { background-color: aqua; }
+        TR { background-color: white; }
+        TD { text-align: left; }
+        H2 { text-align: center; }
+        LI { vertical-align:top; }
+        BODY { background-color: white; }
+        A:link { color: blue; text-decoration: underline; }
+        A:active { text-decoration: underline; }
+        A:hover { text-decoration: underline; }
+        A:visited { color: blue; text-decoration: underline; }
+        .q_a { vertical-align:top; }
+      -->
+    </style>
+  </head>
+
+  <body>
+    <table width="100%" border="0" cellspacing="0" cellpadding="10">
+      <tr valign="middle">
+        <th></th>
+        <th>
+          <h1>MTX Frequently Asked Questions<br />Operational Issues</h1>
+        </th>
+      </tr>
+      <tr valign="top">
+        <th style="vertical-align:top; text-align:left">
+          <h2>Links:</h2>
+          <p>
+            <a href="http://sourceforge.net/projects/mtx">SourceForge Project</a>
+          </p>
+          <p>
+            <a href="http://mtx.opensource-sw.net">Home Page</a>
+          </p>
+          <p>
+            <a href="http://sourceforge.net/project/showfiles.php?group_id=4626">Downloads</a>
+          </p>
+          <p style="font-weight:bold; text-decoration:underline">Compatibility</p>
+          <p>
+            <a href="compatibility.php" style="margin-left: 1em">View</a>
+            <br />
+            <a href="contrib.php" style="margin-left: 1em">Submit</a>
+            <br />
+          </p>
+          <p>
+            <a href="faq.html">FAQ</a>
+          </p>
+        </th>
+        <td rowspan="2">
+          <ol>
+            <li>
+              <table>
+                <tr>
+                  <td class="q_a" id="q1">Q:</td>
+                  <td>
+                    I'm using Red Hat 7.0 and mtx works fine when I type ./mtx from the
+                    command line, but when I use it from scripts I get the following:<br />
+                    <tt>
+                      mtx: Request Sense: Error Code=70 (Current)<br />
+                      mtx: Request Sense: Sense Key=Aborted Command<br />
+                      mtx: Request Sense: Additional Sense Code = 4E<br />
+                      mtx: Request Sense: Additional Sense Qualifier = 00<br />
+                   </tt>
+                   What's happening?
+                  </td>
+                </tr>
+                <tr>
+                  <td class="q_a">A:</td>
+                  <td>
+                    Do "rpm -e mtx". Red Hat 7.0 includes a busted version of mtx. Your
+                    script is apparently picking up the busted mtx in your path. Get rid
+                    of the busted mtx, make sure that /usr/local/bin (or wherever you
+                    put the "good" mtx) is in the path, and all should be well. 
+                  </td>
+                </tr>
+              </table>
+            </li>
+            <li>
+              <table>
+                <tr>
+                  <td class="q_a" id="q2">Q:</td>
+                  <td>
+                    I get<br />
+                    <tt>
+                      # mtx -f /dev/sgr status<br />
+                      mtx: Request Sense: Error Code=70 (Current)<br />
+                      mtx: Request Sense: Sense Key=Not Ready<br />
+                      mtx: Request Sense: Additional Sense Code = 04<br />
+                      mtx: Request Sense: Additional Sense Qualifier = 8E<br />
+                      mtx: READ ELEMENT STATUS Command Failed<br />
+                    </tt>
+                    What gives?
+                  </td>
+                </tr>
+                <tr>
+                  <td class="q_a">A:</td>
+                  <td>
+                    Make sure your loader is in random mode, not sequential mode.
+                    Most "real" loaders (as vs. DAT autoloaders) will not properly report
+                    status information unless they are in "random" mode. 
+                  </td>
+                </tr>
+              </table>
+            </li>
+            <li>
+              <table>
+                <tr>
+                  <td class="q_a" id="q3">Q:</td>
+                  <td>
+                    I issue 'mtx load 5' and it loads tape 5. But when I try to put the tape
+                    back in the magazine, we hit problems:<br />
+                    <tt>
+                      mtx: MOVE MEDIUM from Element Address 82 to 5 Failed<br />
+                    </tt>
+                    What gives?
+                  </td>
+                </tr>
+                <tr>
+                  <td class="q_a">A:</td>
+                  <td>
+                    Many loaders require you to first eject the tape (using 'mt' or 'tapectl')
+                    before you issue an 'unload' command via 'mtx'. 
+                  </td>
+                </tr>
+              </table>
+            </li>
+            <li>
+              <table>
+                <tr>
+                  <td class="q_a" id="q4">Q:</td>
+                  <td>My Breece Hill loader does not properly report its slots.</td>
+                </tr>
+                <tr>
+                  <td class="q_a">A:</td>
+                  <td>
+                    Either set the "auto-inventory" feature in the loader's control panel, 
+                    or run 'mtx inventory' prior to running 'mtx status'.
+                  </td>
+                </tr>
+              </table>
+            </li>
+            <li>
+              <table>
+                <tr>
+                  <td class="q_a" id="q5">Q:</td>
+                  <td>
+                    My Breece Hill loader takes a long time to do an inventory. mtx times
+                    out and spits all over the place. Help!
+                  </td>
+                </tr>
+                <tr>
+                  <td class="q_a">A:</td>
+                  <td>
+                    Many loaders that support barcodes will perform poorly if you place tapes
+                    into them without bar codes. Place bar codes on all your tapes and you
+                    should be able to run 'mtx inventory' without that failure.
+                  </td>
+                </tr>
+              </table>
+            </li>
+            <li>
+              <table>
+                <tr>
+                  <td class="q_a" id="q6">Q:</td>
+                  <td>How do I eject the magazine of my autoloader?</td>
+                </tr>
+                <tr>
+                  <td class="q_a">A:</td>
+                  <td>
+                    Many low-end DAT autoloaders support the removable media 'EJECT' command 
+                    sent to the robotics device, even though it's not documented (or required)
+                    in the SCSI standards. If the loader is at /dev/sgb, simply do 
+                    'mtx -f /dev/sgb eject' and see what happens. (If nothing happens, 
+                    your autoloader doesn't support 'eject'). Some high-end libraries have 
+                    their own proprietary way for ejecting magazine trays, generally 
+                    involving abuse of the 'transfer' command and 'eepos' addendums,
+                    but this is totally non-standard and undocumented. 
+                  </td>
+                </tr>
+              </table>
+            </li>
+            <li>
+              <table>
+                <tr>
+                  <td class="q_a" id="q7">Q:</td>
+                  <td>Is there a standard for cleaning tape bar codes?</td>
+                </tr>
+                <tr>
+                  <td class="q_a">A:</td>
+                  <td>
+                    Many libraries, and many backup programs, expect cleaning tape bar 
+                    codes to start with "CLN". 
+                  </td>
+                </tr>
+              </table>
+            </li>
+            <li>
+              <table>
+                <tr>
+                  <td class="q_a" id="q8">Q:</td>
+                  <td>
+                    Why do I get a message saying "no Data Transfer Element reported" 
+                    on my Sony XL1B changer?
+                  </td>
+                </tr>
+                <tr>
+                  <td class="q_a">A:</td>
+                  <td>
+                    You need to use the "altres" option.<br />
+                    The Sony device does not conform to the standard for Media Changers.  
+                    An alternate method has been written to read the information about the 
+                    device.  The altres option is used to tell mtx to use the alternate method.
+                  </td>
+                </tr>
+              </table>
+            </li>
+            <li>
+              <table>
+                <tr>
+                  <td class="q_a" id="q9">Q:</td>
+                  <td>How do I report a bug?</td>
+                </tr>
+                <tr>
+                  <td class="q_a">A:</td>
+                  <td>
+                    First, read this FAQ. Next, check the mtx list archives at
+                    http://sourceforge.net/projects/mtx to make sure that it's not already addressed 
+                    by somebody else. If your problem is still not solved, send 
+                    (to the mtx list) the following information:<br />
+                    <br />
+                    Result of 'mtx inquiry' on the loader,<br />
+                    Result of 'mtx status' on the loader (minus a bunch of tapes if
+                    it's a 50+ tape loader!),<br />
+                    Results of the operation that isn't working correctly.<br />
+                  </td>
+                </tr>
+              </table>
+            </li>
+          </ol>
+        </td>
+      </tr>
+      <tr>
+        <th style="text-align:center; vertical-align:bottom">
+          <p>
+            <a href="http://www.dreamhost.com/r.cgi?277748">
+              <img src="dh-100x75.gif" alt="DreamHost.com Logo"
+                   height="75" width="100" style="border:0" />
+            </a>
+          </p>
+          <p>
+            <a href="http://validator.w3.org/check?uri=referer" >
+              <img src="valid-xhtml10.png" alt="Valid XHTML 1.0 Strict" 
+                   height="31" width="88" style="border:0" />
+            </a>
+          </p>
+          <p>
+            <a href="http://sourceforge.net/projects/mtx">
+              <img src="http://sflogo.sourceforge.net/sflogo.php?group_id=4626&amp;type=16"
+                   width="150" height="40"
+                   alt="Get MTX: Media Changer Tools at SourceForge.net. Fast, secure and Free Open Source software downloads" />
+            </a>
+          </p>
+        </th>
+      </tr>
+      <tr>
+		<th>
+		</th>
+		<td>
+          <hr />
+          <table style="font-size:small" width="100%">
+            <tr>
+              <td style="text-align:left; width:33%">
+                Maintained by <a href="mailto:robertnelson@users.sourceforge.net">Robert Nelson</a>
+              </td>
+              <td style="text-align:center; width:34%">
+                Date Changed: <span id="DateChanged"></span>
+                <script type="text/javascript">
+                  var DateChanged = "$LastChangedDate: 2009-04-25 05:56:37 +0000 (Sat, 25 Apr 2009) $";
+                  DateChanged = DateChanged.replace(/.*: (.+) \(.*\$/, "$1");
+                  document.getElementById("DateChanged").innerHTML = DateChanged;
+                </script>
+              </td>
+              <td style="text-align:right; width:33%">
+                Changed By: <span id="ChangedBy"></span>
+                <script type="text/javascript">
+                  var ChangedBy = "$LastChangedBy: robertnelson $";
+                  ChangedBy = ChangedBy.replace(/.*: (.+) \$/, "$1");
+                  document.getElementById("ChangedBy").innerHTML = ChangedBy;
+                </script>
+              </td>
+            </tr>
+          </table>
+		</td>
+      </tr>
+    </table>
+  </body>
+</html>

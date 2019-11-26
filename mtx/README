@@ -1,0 +1,38 @@
+MTX
+
+Programs:
+  mtx is the media changer control program
+  tapeinfo dumps some interesting stuff out of tape drives' mode pages and
+sense pages. 
+  loaderinfo dumps some interesting stuff out of loaders' mode pages and
+sense pages.
+  scsitape sends raw SCSI commands to tape drives. Do not use this unless
+you know exactly what you're doing, because you can easily get into a feud
+with the system's own tape driver and end up locking up the whole system.
+
+INSTALLATION:
+
+WARNING: MUST HAVE GNU 'make' TO DO THIS! (e.g. use 'gmake' on freebsd, not
+BSD 'make'!).
+
+Type ./configure to create a Makefile. Type 'make', then 'make
+install'. Type 'man mtx' for info about mtx, and 'man tapeinfo' for
+info about tapeinfo. Enjoy.
+
+Credits:
+
+The original 'mtx' program is copyright 1996-1997 by Leonard Zubkoff
+<lnz@dandelion.com>. This version was modified for multi-drive,
+optical changer, and tape library support by Eric Lee Green
+<eric@badtux.org>. Also added FreeBSD support. Please see the man page
+for current info, and the file 'mtx.doc' for historical info.
+
+My thanks to Doug Bonnell of Breece Hill for suggestions on
+dynamically allocating element info, Tien That Ton of Tandberg for
+being the original tester of the Import/Export Element stuff, Ken
+Porter for RPM's, William D. Smith for the HP/UX port, Kai Makisara
+for the barcode backoff fix, and to all the other people out there who
+have used it, found problems with it, and let me know about it (you
+know who you are).
+  
+   -- Eric Lee Green <eric@badtux.org>

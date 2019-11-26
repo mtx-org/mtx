@@ -1,0 +1,9 @@
+define verb LDRSET
+	image		sys$disk:[]ldrset.exe
+	parameter	p1,		label=device,
+					prompt="Device",
+					value(required,type=$FILE)
+	qualifier	SET, nonnegatable
+	qualifier	RESET, nonnegatable
+	disallow	any2 (SET, RESET)
+	disallow	NOT SET AND NOT RESET

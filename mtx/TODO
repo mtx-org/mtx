@@ -1,0 +1,15 @@
+1 Fix the big element descriptor overflow problem by adding a retry/reallocate
+  if things overflow.
+1 Add a 'timeout' command to adjust the timeout (timeout will be in seconds!).
+1 Add IES command (sets CDB[5] to something in routine Inventory() ).
+1 Fix 'scsitape' READ and WRITE so that block counts work.
+1 Add EXCHANGE command so that we can exchange media between slots in
+  NSM/DISC optical jukeboxes.
+1 If moving media to/from import/export slot, try to do it even if the slot
+  reports that it's empty or full, this will let us stick our tongue out
+  on NSM/DISC optical jukeboxes for importing media. 
+2 Fix ports to other Unixes/VMS.
+2 Add a range to 'mtx status' so that we request status only of 
+  the elements we're interested in, rather than of all of them.
+  (nice for the very big loaders!). 
+3 Better Import/Export port support?

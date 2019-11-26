@@ -1,0 +1,165 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+  <head>
+
+    <title>SCSI Media Changer and Backup Device Control System</title>
+
+  </head>
+
+  <body>
+<center>
+    <h1>SCSI Media Changer and Backup Device Control System</h1>
+</center>
+<p>
+[Also see the SourceForge <a href="http://sourceforge.net/projects/mtx">
+project page</a>.]
+<p>
+<i>mtx</i> is a set of low level driver programs to control features
+of SCSI backup related devices such as autoloaders, tape changers,
+media jukeboxes, and tape drives. It can also report much data,
+including serial numbers, maximum block sizes, and TapeAlert(tm)
+messages that most modern tape drives implement (to tell you the exact
+reason why a backup or restore failed), as well as do raw SCSI READ
+and WRITE commands to tape drives (not important on Linux, but
+important on Solaris due to the fact that the Solaris tape driver
+supports none of the additional features of tape drives invented after
+1988). <i>mtx</i> is designed to be a low level driver in a larger
+scripted backup solution, such as <a
+href="http://amanda.sourceforge.net">Amanda</a>.
+<i>mtx</i> is not
+supposed to itself be a high level interface to the SCSI devices that
+it controls.
+<p> 
+This version has the following features:
+
+  <ul>
+  <li> Will deal with LARGE media libraries (over a hundred elements).
+  <li> Supports multi-drive media changers such as the Exabyte 220 dual-
+drive tape library.
+  <li> Supports the 'invert' bit for optical jukeboxes that need that in
+order to flip their media.
+  <li> Supports the 'eepos' bits for libraries that need this to extend/retract
+their import/export tray. 
+  <li> Now supports import/export elements!
+   <li> Reports volume tags (bar codes) and "alternate volume tags"
+(whatever those are!) for those tape libraries
+that support them. 
+<li> Now runs under FreeBSD and at least Solaris 8. 
+
+<li> Now has a 'man' page!
+<li> The actual SCSI manipulation has been separated out into a library, so
+that you can create your own "C" programs that manipulate SCSI media changers
+directly. (Please note: this is under GPL, so any such programs will have
+to be under GPL also). 
+</ul>
+
+<p>
+ This program supposedly supports FreeBSD, Solaris, Linux, HP/UX, and
+IRIX. Tru64 Unix and VMS are probably irretrievably broken at this
+time. This program has been tested under FreeBSD, Solaris, and Linux,
+and there only with a limited set of hardware. See the COMPATIBILITY 
+list in the source code.
+</ul>
+<h2> Source Code </h2>
+The current source code is:
+<ul>
+<li> <a href="http://mtx.sourceforge.net/mtx-1.2.13.tar.gz">http://mtx.sourceforge.net/mtx-1.2.13.tar.gz</a>
+</ul>
+RPMs may be available from the following place:
+<ul>
+<li> <a href="http://rpmfind.net/linux/RPM/mtx.html">RPMfind's 'mtx' page</a>
+</ul>
+A .spec file is now included in the 'mtx' distribution for building your
+own RPM's.
+<p>
+Note that RPMs
+are courtesy of <a href="http://www.sewingwitch.com/ken/">Kenneth Porter</a>,
+who should be contacted regarding rpm-related problems.
+<p>
+
+<h2> Known Bugs And Limitations </h2>
+<ul>
+<li> 
+       You  may  need  to  do a 'mt offline' (or equivalent for your OS)
+       on the tape drive to
+       eject the tape before you can issue the 'mtx unload'  command.
+The Exabyte EZ-17 and 220 in particular will happily
+       sit there snapping the robot arm's claws around  thin  air
+       trying to grab a tape that's not there.
+<li> 
+The 'next' command does not understand the 'invert' bit (i.e., does not
+recognize that for optical jukeboxes, the 'next' of side one is to unload,
+invert, and reload the same disk). It always advances to the next
+slot instead. 
+ <li>
+       For  some  Linux distributions, you may need to re-compile
+       the kernel to scan SCSI LUN's in order to detect the media
+       changer. Check /proc/scsi/scsi to see what's going on.
+
+<li> 
+       If you try to unload a tape to its 'source' slot, and said
+       slot is full, it will instead put the tape into the  first
+       empty  slot.  Unfortunately the list of empty slots is not
+       updated between commands on the command line,  so  if  you
+       try to unload another drive to a full 'source' slot during
+       the same invocation of 'mtx', it will try to unload to the
+       same  (no  longer  empty)  slot  and  will urp with a SCSI
+       error.
+
+<li> For big tape libraries (more than a couple dozen elements) this
+may set a big Allocation_Size in the SCSI command block for the
+REQUEST_ELEMENT_STATUS command. Some operating systems may not be able
+to handle this. Versions of Linux earlier than 2.2.6, in particular,
+may fail this request due to inability to find contiguous pages of
+memory for the SCSI transfer (later versions of Linux 'sg' device do
+scatter-gather so that this should no longer be a problem).
+
+<li> VMS and Tru64 support are probably irretrievably busted. 
+
+
+<li> This program  will only use the first arm of multiple-arm robots unless
+the robot re-maps all arms to one element ID. 
+
+<li> It has been reported that this program works on Solaris 7 using the 'sst'
+driver, and may work on Solaris 8 using the 'sgen' driver. 'sst' can
+be gotten from the Amanda contrib directory at 
+<a href="http://download.sourceforge.net/amanda/">http://download.sourceforge.net/amanda</a>.
+
+</ul>
+
+<h2> Philosophy </h2>
+The Unix philosophy is "many small tools chained together". <i>mtx</i> supplies
+those small tools so that you can create your own backup and 
+recovery tools by chaining
+<i>mtx</i> pieces together, whether it be with /bin/sh, Perl, Python, or
+CAML.
+
+
+<h2> Support </h2>
+<ul>
+<li>There is now a 'mtx' mailing list at <a href="http://sourceforge.net/projects/mtx/">http://sourceforge.net/projects/mtx/</a>. 
+<li>There is now a 'mtx' home page at <a href="http://mtx.sourceforge.net">http://mtx.sourceforge.net</a>.
+<li> There is now a FAQ that is part of the source code. Please read the
+FAQ first. 
+<li>Report problems to Eric Lee Green (<a
+href="mailto:eric@badtux.org">eric@badtux.org</a>). READ THE FAQ FIRST!
+</ul>
+
+<h2> See Also: </h2>
+<ul>
+<li>The man page for 'mtx'! (once you get it installed). 
+<li>T-10 SCSI Working Group home page at <a href="http://www.t10.org">www.t10.org</a>.
+<li>The Linux 'sg' SCSI generic driver home page at <a href="http://www.torque.net/sg/">http://www.torque.net/sg/</a>.
+<li> <a href="http://badtux.org/eric">The Home Page Of &lt;UL&gt; Tags Anonymous</a> Hi, my name is Eric, and I am addicted to the &lt;UL&gt; tag...
+</ul>
+    <hr>
+    <address>Maintained by <a href="mailto:eric@badtux.org">Eric Lee Green</a><br>
+ Hosted by <a href="http://www.valinux.com">VA Linux</a>'s <a href="http://www.sourceforge.net">SourceForge</a></address><br>
+
+
+<!-- Created: Fri Mar  3 12:19:38 MST 2000 -->
+<!-- hhmts start -->
+Last modified: Mon Jun 25 15:37:22 MST 2001
+<!-- hhmts end -->
+  </body>
+</html>

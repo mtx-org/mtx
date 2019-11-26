@@ -1,0 +1,175 @@
+MTX -- SCSI Tape Attached Medium Changer Control Program
+
+Copyright 1997 by Leonard N. Zubkoff <lnz@dandelion.com>
+
+VMS port, April 1998, by TECSys Development, Inc.
+
+SECTION I - Disclaimer
+
+  These programs / ports are distributed in the hopes that they
+  will be useful, but WITHOUT ANY WARRANTY; without even the
+  implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+  While a significant amount of testing has been performed, and while
+  TDI believes that this utility is safe, ONLY YOU can make that
+  determination with respect to your environment. There are NO
+  GUARANTEES WHATSOEVER that use of this program will not CRASH
+  YOUR SYSTEM or worse. TDI disclaims any responsibility for any
+  losses or damages from the use of this program.
+
+SECTION II - MTX program
+
+***CAUTIONS***
+  * Attempting to check the status of the drive with 1 tape manually
+    inserted in the drive, and no magazine results in an unexpected
+    SCSI status message. During porting of this program on a VS4000/90a,
+    it is believed that the handling of this status message caused
+    some sort of scsi state problem wherein subsequent accesses to
+    the changer from normal MKDRIVER activity resulted in SCSI bus
+    phase errors and an ultimate system failure. Power cycles of both
+    the drive and the host were required to rectify the problem.
+
+Instructions:
+  Read instructions (particularly section III below on the LDRSET utility).
+  Compile (DEC C) and link image, copy to an appropriate install location
+  Define a foreign symbol to access the program
+  Use UNIX syntax to operate program per documentation (MTX.DOC)
+
+  A descrip.mms file is provided if you have MMS or MMK installed.
+  You can build everything from scratch by doing a MMK/FROM_SOURCE. This
+  includes the LDRSET utility described below. You should be in the mtx
+  root directory before you do this, NOT [.vms].
+
+  If you do not have or use MMS or MMK, I can highly recommend MMK as
+  a great tool. It is available from www.madgoat.com. If you still do
+  not have mmk or mms, a build.com is provided. Again, you should be in
+  the mtx root directory before you do this, NOT [.vms].
+
+  Note: If you are on an alpha, the mms[k]-built exe files will be called
+  .alpha_exe, not .exe. Adjust following instructions accordingly.
+
+Example:
+  $ MMS/DESCRIP=[.VMS]   !Or MMK, or @[.VMS]BUILD
+  $ copy mtx.exe DISK$USERDISK:[USERS.FRED.UTILS]MTX
+  $ MTX:==$DISK$USERDISK:[USERS.FRED.UTILS]MTX.EXE
+  $ MTX -f MKA500 status
+    --or--
+  $ DEFINE TAPE MKA500
+  $ MTX status
+
+Notes:
+  * This code does NOT compile under VAX C... the only issue is VAX C's
+    incorrect assertion that a 'boolean' is not an acceptable "expression"
+    on either side of a || operator. If you are on VAX C - upgrade. If you
+    really must... then use a ((int)...) around the left-hand-side
+    of the lines where the compiler complains.... like so:
+        if (((int)StorageElementFull[FirstStorageElementNumber]) ||
+
+  * The following symbols result from 'status' or element movement commands:
+      MTX_DTE   (Data Transfer Element)
+        FULL:n            (Full, with element 'n'... if n=0, then unknown ele)
+        EMPTY
+      MTX_MSZ   (Magazine SiZe)
+        n                 (Number of magazine slots)
+      MTX_STE01 thru MTX_STExx (STorage Element, Max is MTX_MSZ)
+        FULL
+        EMPTY  
+      These will allow a DCL program to process the results
+      of the status command
+
+  * PHY_IO and DIAGNOSE are required to run the program as it stands
+    today. Yes, the GKdriver dox say PHY_IO or LOG_IO.... MKdriver
+    thinks otherwise. It wins.
+
+  * The program IS equipped to handle being installed with DIAGNOSE
+    and PHY_IO. A certain level of checking is done to see that the
+    right type of device is being targeted for the autoloader manipulation
+    SCSI commands. [see next item]
+
+  * There is an indicator bit in DEVCHAR2 that indicates the presence of
+    a loader on a tape. Unfortunately, it appears that the "knowledge" of
+    whether a loader is present or not is hard-coded into mkdriver. This
+    means that if you don't have the magic DEC rom's in your Archive
+    loader, then the LDR bit is not set. This makes the LDR bit effectively
+    useless unless you want to write a kernel dinker program you could
+    run from startup to "fix" the DEVCHAR2 longword.  (Incidentally,
+    if you ship the autoloader commands at a TZ30 (a non-loader drive),
+    the tz30 blows it off w/o any adverse side-effects - I would hope
+    that other drives are as tolerant.)
+
+    Because of this misfeature, the code to check the LDR flag in DEVCHAR2
+    is commented out.
+
+    *See section below on LDRSET utility if you want to use this
+    feature anyway (recommended).
+
+  * This program has been tested under:
+      VAX C V2.2, VAX/VMS 6.1, VS 4000/90A  **with code modifications
+      DEC C V5.2, VAX/VMS 6.1, VS 4000/90A
+      DEC C V5.3, AXP/VMS 6.2, DEC3000-300X
+
+
+SECTION III - LDRSET Utility
+
+Description:
+  This is a small KERNEL MODE utility program to go set or reset
+  the DEV$M_LDR flag in UCB$L_DEVCHAR2 for a specified device. While
+  a certain amount of checking is performed, and while the author
+  believes that this utility is safe, ONLY YOU can make that
+  determination with respect to your environment. There are NO
+  GUARANTEES WHATSOEVER that use of this program will not CRASH
+  YOUR SYSTEM or worse. TDI disclaims any responsibility for any
+  losses or damages from the use of this program.
+
+  With all that said... this utility can be used [example: system
+  startup] to set the LDR flag for the autoloader tape device.
+  With the loader flag properly set, you can re-enable the LDR
+  check section in MTX and be fairly well certain that the MTX
+  utility will not be used against a drive that is not a SCSI
+  MAGTAPE with a LOADER attached.
+
+Instructions:
+  Compile (DEC C ***ONLY***) the LDRSET C program
+
+  Alpha:
+    MACRO/MIGRATE the LDRUTIL.MAR program
+    LINK LDRSET,LDRUTIL/SYSEXE to generate the image
+
+  Vax
+    MACRO the LDRUTIL.MAR program
+    LINK LDRSET,LDRUTIL to generate the image
+
+  [NOTE!!! ---> DO NOT USE RESULTING IMAGE IF THERE ARE ANY COMPILE OR LINK
+                ERRORS!!!]
+
+  Copy to an appropriate install location.
+
+  Edit provided CLD file to reflect the installed location
+
+  Use the following syntax:
+      $ SET COMMAND LDRSET
+      $ LDRSET MKA500: /SET	!Sets the loader present flag on MKA500
+      $ LDRSET MKA500: /RESET	!Clears the loader present flag on MKA500
+
+Alpha example:
+  $ CC/DECC/DEBUG/NOOPT LDRSET
+  $ MACRO/MIGRATE LDRUTIL
+  $ LINK LDRSET,LDRUTIL/SYSEXE
+
+Vax example:
+  $ CC/DECC/DEBUG/NOOPT LDRSET
+  $ MACRO LDRUTIL
+  $ LINK LDRSET,LDRUTIL
+
+Common:
+  $ copy LDRSET.EXE DISK$USERDISK:[USERS.FRED.UTILS]LDRSET.EXE
+  $ copy LDRSET.CLD DISK$USERDISK:[USERS.FRED.UTILS]LDRSET.CLD
+  $ EDIT DISK$USERDISK:[USERS.FRED.UTILS]LDRSET.CLD
+     ...change image sys$disk:[]ldrset line to :
+           image DISK$USERDISK:[USERS.FRED.UTILS]LDRSET.EXE
+  $ LDRSET MKA500 /SET
+
+  * This program has been tested under:
+      DEC C V5.2, VAX/VMS 6.1, VS 4000/90A
+      DEC C V5.6, AXP/VMS 7.1, AS 1000A
+

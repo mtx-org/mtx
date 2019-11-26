@@ -1,0 +1,209 @@
+[WARNING: This document is of historical value only! Please read
+ 'mtxl.README.html' and 'man mtx' for current documentation! The only
+ thing useful here is examples of how to use the 'tar' command for
+ multi-tape backups.
+]
+
+		MTX - SCSI Tape Medium Changer Control Program
+
+	Version 1.1 for Linux, Solaris, IRIX, Digital Unix, and OpenVMS
+
+				  2 June 1998
+
+			       Leonard N. Zubkoff
+			       Dandelion Digital
+			       lnz@dandelion.com
+
+	 Copyright 1997-1998 by Leonard N. Zubkoff <lnz@dandelion.com>
+
+
+				 INTRODUCTION
+
+The MTX program controls the robotic mechanism in DDS Autoloaders such as the
+Seagate 4586NP (Archive Python 28849-XXX).  This program is also reported to
+work with the Seagate 4584NP, HP Surestore 12000, Quantum DLT 2500 XT, and AIWA
+DL-210.  The 4586NP responds to both Logical Units 0 and 1 on the selected
+Target ID.  Logical Unit 0 supports commands from the SCSI-3 Sequential Stream
+Device Command Set and must be accessed via the SCSI tape devices /dev/st<N>.
+Logical Unit 1 only supports commands from the SCSI-3 Medium Changer Command
+Set and must be accessed via the SCSI Generic devices /dev/sg<N>.  In addition,
+Logical Unit 0 also acts as an Attached Medium Changer and supports the READ
+ELEMENT STATUS and MOVE MEDIUM commands.  Since using the Primary Device
+(Logical Unit 0) via the Attached Medium Changer interface is sufficient for
+the commands provided by this program, Logical Unit 1 is not normally used.
+The AIWA DL-210, by contrast, does not support the Attached Medium Changer
+commands on Logical Unit 0 and so MTX must be used with Logical Unit 1 via the
+SCSI Generic devices /dev/sg<N>.  Note that when using the SCSI Generic devices
+the Linux kernel option "max_scsi_luns=2" may be necessary.
+
+Medium Changers support four types of elements: Medium Transport Elements,
+Storage Elements, Import Export Elements, and Data Transfer Elements.  For the
+limited case of DDS Autoloaders, only the Data Transfer Element and Storage
+Element types are really applicable.  The Data Transfer Element is the primary
+device where a volume can be loaded to actually perform data transfers.  A
+Storage Element is a place a volume can be when it is waiting to be used.  For
+a DDS Autoloader, the Storage Elements are the slots in the cartridge where
+tapes may be placed, and the Data Transfer Element is the tape mechanism.
+
+Every Medium Changer Element has a unique integer Element Address that
+identifies it in the address space of all Elements known to the Medium Changer.
+For the 4586NP, the Data Transfer Element is Address 1 and the Storage Elements
+are Addresses 2-5 or 2-13.  To simplify the human interface, this program does
+not use Element Addresses directly.  Rather, it uses Storage Element Numbers
+which range from 1 to the number of Storage Elements available.
+
+The specific tape device to be operated on can either be supplied on the
+command line with the "-f <tape-device>" option, or via the TAPE environment
+variable.
+
+
+				 BUILDING MTX
+
+The Makefile contains sections for Linux, Solaris/SPARC, SGI IRIX, and Digital
+UNIX.  Comment/uncomment as necessary for the target environment.  For OpenVMS,
+see the file "vms/000readme" for information on building MTX; a VMS release
+including pre-built binaries should be available from the WKU VMS FILESERV
+ARCHIVES, which are located at URLs http://www2.wku.edu/www/fileserv/ and
+ftp://ftp.wku.edu/vms/fileserv/.
+
+
+				   COMMANDS
+
+MTX provides the following commands:
+
+
+mtx [ -f <tape-device> ] inquiry
+
+The "inquiry" command reports the Vendor ID, Product ID, and Revision from a
+SCSI INQUIRY command.
+
+kelewan:~# setenv TAPE /dev/st0
+
+kelewan:~# mtx inquiry
+Vendor ID: 'ARCHIVE ', Product ID: 'Python 28849-XXX', Revision: '4.CM'
+
+
+mtx [ -f <tape-device> ] status
+
+The "status" command reports on the status of the DDS Autloader.  The report
+indicates the status of the Data Transfer Element and each of the Storage
+Elements.  In the first example, no tape is currently loaded.  In the second
+example, Storage Element Number 1 is loaded.  The Storage Element loaded into
+the Data Transfer Element is usually reported by the DDS Autoloader, or it can
+be inferred by MTX if there is only a single empty Storage Element.
+
+kelewan:~# mtx status
+Data Transfer Element:	Empty
+Storage Element 1:	Full
+Storage Element 2:	Full
+Storage Element 3:	Full
+Storage Element 4:	Full
+
+
+kelewan:~# mtx status
+Data Transfer Element:	Full (Storage Element 1 Loaded)
+Storage Element 1:	Empty
+Storage Element 2:	Full
+Storage Element 3:	Full
+Storage Element 4:	Full
+
+
+mtx [ -f <tape-device> ] load <storage-element-number>
+
+The "load" command loads the volume in Storage Element <storage-element-number>
+into the Data Transfer Element.  An error is signaled if the Data Transfer
+Element is already full.
+
+
+mtx [ -f <tape-device> ] unload [ <storage-element-number> ]
+
+The "unload" command unloads the volume in the Data Transfer Element into
+Storage Element <storage-element-number>.  If <storage-element-number> is not
+provided, then the volume is unloaded back into the Storage Element from which
+it was originally loaded, if known.  An error is signaled if the Storage
+Element is already full.
+
+
+mtx [ -f <tape-device> ] first
+
+The "first" command unloads any volume in the Data Transfer Element and then
+loads the volume in the lowest numbered non-empty Storage Element.  If the
+correct Storage Element is already loaded, the unload/load is suppressed.
+
+
+mtx [ -f <tape-device> ] next
+
+The "next" command unloads any volume in the Data Transfer Element and then
+loads the volume in the lowest numbered non-empty Storage Element above the
+Storage Element that was just unloaded.  If there is no next Storage Element,
+the unload is still performed and the Data Transfer Element will be left empty
+so that the volume is not accidentally overwritten.
+
+
+mtx [ -f <tape-device> ] last
+
+The "last" command unloads any volume in the Data Transfer Element and then
+loads the volume in the highest numbered non-empty Storage Element.  If the
+correct Storage Element is already loaded, the unload/load is suppressed.
+
+
+mtx [ -f <tape-device> ] previous
+
+The "previous" command unloads any volume in the Data Transfer Element and then
+loads the volume in the highest numbered non-empty Storage Element below the
+Storage Element that was just unloaded.  If there is no previous Storage
+Element, the unload is still performed and the Data Transfer Element will be
+left empty so that the volume is not accidentally overwritten.
+
+
+The interface is designed to allow both explicit control of precisely which
+Storage Element is loaded, as well as sequential access among only the Storage
+Elements that actually have volumes present.  Thus for example, one way of
+using MTX would be to perform Monday's incremental backups on Storage Element
+1, Tuesday's on Storage Element 2, and so on.  Multi-volume full backups are
+also conveniently supported, as in:
+
+setenv TAPE "/dev/st0"
+
+mtx status
+
+mtx first
+
+time tar --create --one-file-system --atime-preserve \
+	 --listed-incremental `date +%y%m%d`.ss \
+	 --multi-volume --new-volume-script "mtx next" \
+	 --directory /  <wherever>
+
+mtx first
+
+time tar --compare --multi-volume --new-volume-script "mtx next" \
+	 --directory /
+
+mtx unload
+
+
+			   LINUX KERNEL REQUIREMENTS
+
+Because the MOVE MEDIUM command may require 60 seconds or more to perform a
+volume load or unload request, a longer timeout must be provided.  Linux
+kernels 2.0.30 and 2.1.28 should already contain a long enough timeout.  For
+earlier kernels, edit the file "linux/drivers/scsi/scsi_ioctl.c" and add the
+following entries to the switch statement in ioctl_command:
+
+      case MOVE_MEDIUM:
+      case READ_ELEMENT_STATUS:
+	timeout =  5 * 60 * HZ;	/* 5 minutes */
+	retries = 1;
+	break;
+
+For older kernels, you may also need to add the following definitions to
+"linux/include/scsi/scsi.h":
+
+#define MOVE_MEDIUM           0xa5
+#define READ_ELEMENT_STATUS   0xb8
+
+Note also that "/usr/include/scsi" should be a symbolic link to the directory
+"linux/include/scsi" from your kernel source.
+
+Finally, when using MTX you may see some console messages from the SCSI tape
+driver mentioning that there is no tape present.  These can safely be ignored.

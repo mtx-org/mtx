@@ -1,0 +1,257 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-type" content="text/html;charset=UTF-8" />
+
+    <title>SCSI Media Changer and Backup Device Control System</title>
+
+    <style type="text/css">
+      <!--
+        TH { background-color: Aqua;  }
+        TR { background-color: white; }
+        TD { text-align: left; }
+        H1 { text-align: center; }
+        BODY { background-color: white; }
+
+        A:link { color: blue; text-decoration: none ; }
+        A:active { text-decoration: underline ; }
+        A:hover { text-decoration: underline ; }
+        A:visited { color: violet; text-decoration: none ; }
+      -->
+    </style>
+  </head>
+
+  <body>
+    <table width="100%" cellspacing="0" cellpadding="10">
+      <tr valign="middle">
+        <th></th>
+        <th>
+          <h1>MTX</h1>
+        </th>
+      </tr>
+      <tr>
+        <th style="vertical-align:top; text-align:left">
+          <h2>Links:</h2>
+          <p>
+            <a href="http://sourceforge.net/projects/mtx">SourceForge Project</a>
+          </p>
+          <p>
+            <span style="font-weight:bold">Home Page</span>
+          </p>
+          <p>
+            <a href="http://sourceforge.net/project/showfiles.php?group_id=4626">Downloads</a>
+          </p>
+          <p style="font-weight:bold; text-decoration:underline">Compatibility</p>
+          <p>
+            <a href="compatibility.php" style="margin-left: 1em">View</a>
+            <br />
+            <a href="contrib.php" style="margin-left: 1em">Submit</a>
+            <br />
+          </p>
+          <p>
+            <a href="faq.html">FAQ</a>
+          </p>
+        </th>
+        <td rowspan="2">
+          <h2 style="text-align: center;">SCSI Media Changer and Backup Device Control</h2>
+          <p>
+            <i>mtx</i> is a set of low level driver programs to control features
+            of SCSI backup related devices such as autoloaders, tape changers,
+            media jukeboxes, and tape drives. It can also report much data,
+            including serial numbers, maximum block sizes, and TapeAlert&trade;
+            messages that most modern tape drives implement (to tell you the exact
+            reason why a backup or restore failed), as well as do raw SCSI READ
+            and WRITE commands to tape drives (not important on Linux, but
+            important on Solaris due to the fact that the Solaris tape driver
+            supports none of the additional features of tape drives invented after
+            1988). <i>mtx</i> is designed to be a low level driver in a larger
+            scripted backup solution, such as 
+            <a href="http://www.bacula.org">Bacula</a> or 
+            <a href="http://amanda.sourceforge.net">Amanda</a>.
+            <i>mtx</i> is not supposed to itself be a high level interface to the SCSI 
+            devices that it controls.
+          </p>
+          <p>
+            This version has the following features:
+          </p>
+          <ul>
+            <li>Will deal with LARGE media libraries (over a hundred elements).</li>
+            <li>Supports multi-drive media changers such as the Exabyte 220 dual-
+                drive tape library.</li>
+            <li>Supports the 'invert' bit for optical jukeboxes that need that in
+                order to flip their media.</li>
+            <li>Supports the 'eepos' bits for libraries that need this to extend/retract
+                their import/export tray.</li>
+            <li>Now supports import/export elements!</li>
+            <li>Reports volume tags (bar codes) and "alternate volume tags"
+                (whatever those are!) for those tape libraries that support them.</li>
+            <li>Now runs under FreeBSD and at least Solaris 8.</li>
+            <li>Now has a 'man' page!</li>
+            <li>The actual SCSI manipulation has been separated out into a library, so
+                that you can create your own "C" programs that manipulate SCSI media 
+                changers directly. (Please note: this is under GPL, so any such programs 
+                will have to be under GPL also).</li>
+          </ul>
+          <p>
+            This program supposedly supports FreeBSD, Solaris, Linux, HP/UX, and
+            IRIX. Tru64 Unix and VMS are probably irretrievably broken at this
+            time. This program has been tested under FreeBSD, Solaris, and Linux,
+            and there only with a limited set of hardware.
+          </p>
+
+          <h2> Source Code </h2>
+          The current source code is at:
+          <ul>
+            <li>
+              <a href="http://sourceforge.net/project/showfiles.php?group_id=4626">Sourceforge Download Page for 'mtx'</a>
+            </li>
+          </ul>
+          RPMs may be available from the following place:
+          <ul>
+            <li>
+              <a href="http://rpmfind.net/linux/RPM/mtx.php">RPMfind's 'mtx' page</a>
+            </li>
+          </ul>
+          <p>
+            A .spec file is now included in the 'mtx' distribution for building your
+            own RPM's.
+          </p>
+          <p>
+            Note that RPMs are courtesy of <a href="http://www.sewingwitch.com/ken/">Kenneth Porter</a>.
+          </p>
+
+          <h2>Known Bugs And Limitations</h2>
+          <ul>
+            <li>
+              You may need to do a 'mt offline' (or equivalent for your OS) on the tape 
+              drive to eject the tape before you can issue the 'mtx unload'  command.
+              <br />
+              The Exabyte EZ-17 and 220 in particular will happily sit there snapping 
+              the robot arm's claws around thin air trying to grab a tape that's not there.
+            </li>
+            <li> 
+              The 'next' command does not understand the 'invert' bit (i.e., does not
+              recognize that for optical jukeboxes, the 'next' of side one is to unload,
+              invert, and reload the same disk). It always advances to the next
+              slot instead. 
+            </li>
+            <li>
+              For some Linux distributions, you may need to re-compile
+              the kernel to scan SCSI LUN's in order to detect the media
+              changer. Check /proc/scsi/scsi to see what's going on.
+            </li>
+            <li>
+              If you try to unload a tape to its 'source' slot, and said
+              slot is full, it will instead put the tape into the first
+              empty slot.  Unfortunately the list of empty slots is not
+              updated between commands on the command line, so if you
+              try to unload another drive to a full 'source' slot during
+              the same invocation of 'mtx', it will try to unload to the
+              same (no longer empty) slot and will urp with a SCSI error.
+            </li>
+            <li>
+              For big tape libraries (more than a couple dozen elements) this
+              may set a big Allocation_Size in the SCSI command block for the
+              REQUEST_ELEMENT_STATUS command. Some operating systems may not be able
+              to handle this. Versions of Linux earlier than 2.2.6, in particular,
+              may fail this request due to inability to find contiguous pages of
+              memory for the SCSI transfer (later versions of Linux 'sg' device do
+              scatter-gather so that this should no longer be a problem).
+            </li>
+            <li>
+              VMS and Tru64 support are probably irretrievably busted. 
+            </li>
+            <li>
+              This program  will only use the first arm of multiple-arm robots unless
+              the robot re-maps all arms to one element ID. 
+            </li>
+            <li>
+              It has been reported that this program works on Solaris 7 using the 'sst'
+              driver, and may work on Solaris 8 using the 'sgen' driver. 'sst' can
+              be gotten from the Amanda contrib directory at 
+              <a href="http://download.sourceforge.net/amanda/">http://download.sourceforge.net/amanda</a>.
+            </li>
+          </ul>
+
+          <h2>Philosophy</h2>
+          The Unix philosophy is "many small tools chained together". <i>mtx</i> supplies
+          those small tools so that you can create your own backup and 
+          recovery tools by chaining
+          <i>mtx</i> pieces together, whether it be with /bin/sh, Perl, Python, or
+          CAML.
+
+          <h2>Support</h2>
+          <ul>
+            <li>Please read the <a href="faq.html">FAQ</a> first.</li>
+            <li>The 'mtx' mailing list is <a href="mailto:mtx-general@lists.sourceforge.net">mtx-general@lists.sourceforge.net</a>.</li>
+            <li>Bugs can be reported and new features requested <a href="http://mtx.opensource-sw.net/bugs">here</a>.</li>
+          </ul>
+
+          <h2>See Also:</h2>
+          <ul>
+            <li>The Sourceforge <a href="http://sourceforge.net/projects/mtx"> project page</a> for mtx.</li>
+            <li>The <a href="http://mtx.opensource-sw.net/compatibility.php">MTX Compatibility Page</a></li>
+            <li>The man page for 'mtx'! (once you get it installed). </li>
+            <li>The <a href="http://search.cpan.org/author/LUSOL/tkjuke-1.0.6">TKjuke</a> front end for 'mtx'</li>
+            <li>T-10 SCSI Working Group home page at <a href="http://www.t10.org">www.t10.org</a>.</li>
+            <li>The Linux 'sg' SCSI generic driver home page at <a href="http://www.torque.net/sg/">http://www.torque.net/sg/</a>.</li>
+          </ul>
+        </td>
+      </tr>
+      <tr>
+        <th style="text-align:center; vertical-align:bottom">
+          <p>
+            <a href="http://www.dreamhost.com/r.cgi?277748">
+              <img src="dh-100x75.gif" alt="DreamHost.com Logo"
+                   height="75" width="100" style="border:0" />
+            </a>
+          </p>
+          <p>
+            <a href="http://validator.w3.org/check?uri=referer" >
+              <img src="valid-xhtml10.png" alt="Valid XHTML 1.0 Strict" 
+                   height="31" width="88" style="border:0" />
+            </a>
+          </p>
+          <p>
+            <a href="http://sourceforge.net/projects/mtx">
+              <img src="http://sflogo.sourceforge.net/sflogo.php?group_id=4626&amp;type=16"
+                   width="150" height="40"
+                   alt="Get MTX: Media Changer Tools at SourceForge.net. Fast, secure and Free Open Source software downloads" />
+            </a>
+          </p>
+        </th>
+      </tr>
+      <tr>
+		<th>
+		</th>
+		<td>
+          <hr />
+          <table style="font-size:small" width="100%">
+            <tr>
+              <td style="text-align:left; width:33%">
+                Maintained by <a href="mailto:robertnelson@users.sourceforge.net">Robert Nelson</a>
+              </td>
+              <td style="text-align:center; width:34%">
+                Date Changed: <span id="DateChanged"></span>
+                <script type="text/javascript">
+                  var DateChanged = "$LastChangedDate: 2009-04-25 05:56:37 +0000 (Sat, 25 Apr 2009) $";
+                  DateChanged = DateChanged.replace(/.*: (.+) \(.*\$/, "$1");
+                  document.getElementById("DateChanged").innerHTML = DateChanged;
+                </script>
+              </td>
+              <td style="text-align:right; width:33%">
+                Changed By: <span id="ChangedBy"></span>
+                <script type="text/javascript">
+                  var ChangedBy = "$LastChangedBy: robertnelson $";
+                  ChangedBy = ChangedBy.replace(/.*: (.+) \$/, "$1");
+                  document.getElementById("ChangedBy").innerHTML = ChangedBy;
+                </script>
+              </td>
+            </tr>
+          </table>
+		</td>
+      </tr>
+    </table>
+  </body>
+</html>

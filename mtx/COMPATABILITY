@@ -1,0 +1,163 @@
+WARNING: THIS FILE IS OBSOLETE AND FOR HISTORICAL USE ONLY. Please
+see http://mtx.sourceforge.net for a more up-to-date compatibility list. 
+
+Operating Systems:
+-----------------
+
+mtx 1.2 is currently known to work flawlessly under the following
+operating systems:
+
+Linux (2.2.5 kernel and above)
+FreeBSD (tested with versions 3.2 and above, but should work for all 3.x
+         and 4.x). 
+
+Various people have reported that they have managed to make mtx work
+on various versions of Solaris. Please check the mtx list archives (
+http://mtx.sourceforge.net ) to see how they've done it.
+
+IRIX 6.5 apparently works flawlessly:
+
+(Richard.Lefebvre(@AROBAS)cerca(.POINT)umontreal(.POINT)ca):
+I just wanted to send you 1 or 2 comments on mtx. I just downloaded it
+last friday to use with and SGI Origin2000 and an 8 slot DLT autoloader.
+The whole thing compiled fine (under gcc).
+
+From Dan Wright (dtwright at uiuc dot uiuc.edu):
+  I just wanted to send an e-mail to let you know that mtx 1.2.9
+  works great for me on IRIX 6.5 with an ADIC FastStor DLT8000.
+  IRIX 6.5 has a generic scsi interface installed by default, so to
+  access the autoloader I use "mtx -f /dev/scsi/sc1d1l0" (bus 1 id 1
+  lun 0).
+
+----------------
+Changer Devices
+----------------
+The following has been directly tested:
+
+* Exabyte 220 with 1 drive   (21 slots)
+* Exabyte 220 with 2 drives  (21 slots)
+* Exabyte EZ-17  (7 slots)
+    Known quirks: Must eject tape using 'mt' or 'tapectl' prior to using
+  the 'unload' command.
+
+* Seagate DDS-4 DAT AutoLoader (1 drive, 6 slots)
+       Product ID: 'DAT    06241-XXX'  
+    Known quirks: Uses LUN 1 for robot. On Linux, must compile kernel with 
+    "Scan SCSI LUNs" or add the following line to your /etc/lilo.conf (and
+    re-run /sbin/lilo):
+         append="max_scsi_luns=2" 
+
+* DISC D-40 optical library (2 drives, 40 slots, 1 import/export): Yes,
+  it really does report that it's a Maxoptix!
+   Product Type: Medium Changer
+   Vendor ID: 'Maxoptix'
+   Product ID: 'MAXLYB          '
+   Revision: '3.04'
+   Attached Changer: No
+
+The following have been tested by others, and information may be
+incomplete or in error even.
+
+* Compaq DLT Library 20/40, 1 drive 15 slots  (antony at elizatravel dot com)
+   Vendor: HP       Model: C5173-4000
+
+* Vendor ID: 'ADIC    '       (boris dot klug at ibs dash ag dot de)   
+  Product ID: 'VLS DLT         '  7 slot 1 import/export 1 drive.
+
+* Unknown Overland changer (phreno at pacbell dot net):
+> > > Vendor ID: 'OVERLAND'
+> > > Product ID: 'LXB             '
+
+* "old Exabyte 10e tape loaders" (drew at pctc dot com)
+
+* Unknown HP DLT changer: (eric at collab dot net)
+> > Storage Changer /dev/sgd:1 Drives, 15 Slots ( 0 Import/Export )
+> > Vendor ID: 'HP      '
+> > Product ID: 'C5173-4000      '
+
+* "Lago Sys LS-380L/StorageTek 9704/Imation ITL-2225 (mine's a 
+  StorageTek labeled)" 25-slot, 2-drive, 1-arm, 1-import/export
+  (eswan at lips dot net)
+
+* HP SureStore Optical 80fx. (mmarchione at nyhomes dot org )
+  Vendor: HP       Model: C1160F           Rev: 0.40
+  Type:   Medium Changer                   ANSI SCSI revision: 02 
+
+* Breece Hill tape library (unknown configuration, unknown reporter):
+  Vendor ID: 'BHTI'
+  Product ID: 'Q2 '
+   Oddities: Must either turn on auto-inventory, or run 'mtx inventory'
+     prior to running any other mtx command. Reads bar codes by yanking
+    tapes out of slots and waving them in front of bar code reader, so
+    inventory of tapes with no bar code is VERY slow (bar code your tapes!).
+
+
+* Seagate Scorpion DDS-3 4-tape autochanger 
+     (jsled at normandy dot smarttouch dot com):
+         Vendor ID: 'ARCHIVE '
+         Product ID: 'Python 04377-XXX'
+
+* Overland 15 tape 1 drive DLT changer: (asmith at umdgrb dot umd dot edu)
+   Vendor ID: 'OVERLAND'
+   Product ID: 'LXB             '
+
+* ADIC DAT AutoChanger -- 1 drive, 12 slots, 1 import-export:
+      Vendor ID: 'ADIC    '   (andrew_gray at irobotics dot com)
+      Product ID: 'DAT AutoChanger '
+   Quirks: firmware version 0357 does not appear to work w/mtx (request
+   from ADIC that they upgrade your firmeware to 0361, which does
+   seem to work), firmware version revision `0462` does work. Use 
+   'mtx inquiry' to detirmine which firmware you have. 
+
+* HP 1/20 DLT loader: "We have a HP 1/20, but I think it's all the
+  same hardware. mtx works fine with it." (jo2y at midnightlinux dot com)
+
+* Exabyte 120 (116 slots, 4 tape drives): (wsb at paralleldata dot com)
+  Quirks: This loader does not properly support the loader slot assignment
+  page used to allocate element structures, so the #defines must be
+  changed in mtx.h for MAX_STORAGE_ELEMENTS, MAX_TRANSFER_ELEMENTS, and 
+  MAX_TRANSPORT_ELEMENTS. May also need to increase the SCSI timeout to
+  do inventories. Takes a LONG time to do inventories if you don't have
+  bar codes!
+
+* Exabyte 210 (wsb at paralleldata dot com)
+
+
+* Adic FastStor DLT4000 (7-Slot 1 drive):
+  Vendor ID: 'ADIC    '
+  Product ID: 'FastStor DLT    '
+
+* Ecrix AutoPak VXA (15-slot 1 drive) in configuration mode 0 (mark
+      at commerceengine dot com):
+  "This drive can be configured to emulate several types, but I've
+  only tested it in this one mode."
+  Vendor ID: 'SPECTRA '
+  Product ID: '215             '
+  Revision: '1008'
+  Attached Changer: No
+  SerialNumber: '023201'
+
+* ATL P1000 2 drive, 31 slot, 1 import/output: (dna plus mtx at clas.ufl.edu)
+ # ./mtx -f /dev/scsi/changer/c2t0d0 inquiry
+  Product Type: Medium Changer
+  Vendor ID: 'ATL     '
+  Product ID: 'P1000    6220070'
+  Revision: '2.01'
+  Attached Changer: No
+
+* NSM DVD Jukebox:
+ Storage Changer /dev/sg4:4 Drives, 561 Slots ( 1 Import/Export )
+Product Type: Medium Changer
+ Vendor ID: 'NSM     '
+ Product ID: 'NSM6000         '
+ Revision: '1120'
+ Attached Changer: No
+ 
+* Spectralogic Treefrog/Bullfrog:
+  Storage Changer /dev/sg0:2 Drives, 15 Slots ( 0 Import/Export )   
+Product Type: Medium Changer
+Vendor ID: 'SPECTRA '
+Product ID: '10000           '
+Revision: 'X010'
+Attached Changer: No
+

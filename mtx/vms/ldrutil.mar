@@ -1,0 +1,104 @@
+	.title	LDRUTIL - Obtain ucb for assigned channel
+	.ident	/LDRUTIL V1.0/
+; LDRUTIL - VMS UCB LDR bit utility library
+;
+; TECSys Development, Inc., April 1998
+;
+; This file may be copied under the terms and conditions of version 2
+; of the GNU General Public License, as published by the Free
+; Software Foundation (Cambridge, Massachusetts).
+;
+; This program is distributed in the hope that it will be useful,
+; but WITHOUT ANY WARRANTY; without even the implied warranty of
+; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+; GNU General Public License for more details.
+;
+; You should have received a copy of the GNU General Public License
+; along with this program; if not, write to the Free Software
+; Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  */
+;
+;
+	.link	"sys$system:sys.stb"/selective_search
+	.library /sys$share:lib/
+
+	.NTYPE	...IS_IT_ALPHA,R22		;Get the type of R22
+	...IS_IT_ALPHA = <...IS_IT_ALPHA@-4&^XF>-5
+	.IIF EQ,...IS_IT_ALPHA,	ALPHA=1
+
+	$ssdef
+	$ucbdef
+	$ccbdef
+	$chfdef
+	$dcdef
+	$devdef
+	$pcbdef
+
+	.psect	$$code,exe,rd,nowrt,shr
+.IF NDF,ALPHA
+.entry	finducb,^m<r2,r3,r4,r5,r6,r7,r8,r9>	;Find UCB address from channel
+.IFF
+.call_entry,	2,home_args=TRUE,-
+		preserve=<r2,r3,r4,r5,r6,r7,r8,r9,r10,r11>,-
+		output=<r0,r1>,-
+		label=finducb
+.endc
+	movzwl	4(AP),r0			;prep to find UCB
+	jsb	g^IOC$VERIFYCHAN		;callable from user mode!
+	blbc	r0,20$
+	movl	CCB$L_UCB(r1),@8(AP)		;save UCB address
+	movzbl	#1,r0
+20$:	ret
+
+.IF NDF,ALPHA
+.entry	__setldr,^m<r2,r3,r4,r5,r6,r7,r8,r9>	;Find UCB address from channel
+.IFF
+.call_entry,	2,home_args=TRUE,-
+		preserve=<r2,r3,r4,r5,r6,r7,r8,r9,r10,r11>,-
+		output=<r0,r1>,-
+		label=__setldr
+.endc
+	movl	4(AP),r1
+	bisl	#DEV$M_LDR,UCB$L_DEVCHAR2(r1)
+	movzbl	#1,r0
+	ret
+
+.IF NDF,ALPHA
+.entry	_setldr,^m<r2,r3,r4,r5,r6,r7,r8,r9>	;Find UCB address from channel
+.IFF
+.call_entry,	2,home_args=TRUE,-
+		preserve=<r2,r3,r4,r5,r6,r7,r8,r9,r10,r11>,-
+		output=<r0,r1>,-
+		label=_setldr
+.endc
+	$cmkrnl_s	-
+		routin	=	__setldr,-
+		arglst	=	(AP)
+	ret
+
+.IF NDF,ALPHA
+.entry	__clrldr,^m<r2,r3,r4,r5,r6,r7,r8,r9>	;Find UCB address from channel
+.IFF
+.call_entry,	2,home_args=TRUE,-
+		preserve=<r2,r3,r4,r5,r6,r7,r8,r9,r10,r11>,-
+		output=<r0,r1>,-
+		label=__clrldr
+.endc
+	movl	4(AP),r1
+	bicl	#DEV$M_LDR,UCB$L_DEVCHAR2(r1)
+	movzbl	#1,r0
+	ret
+
+.IF NDF,ALPHA
+.entry	_clrldr,^m<r2,r3,r4,r5,r6,r7,r8,r9>	;Find UCB address from channel
+.IFF
+.call_entry,	2,home_args=TRUE,-
+		preserve=<r2,r3,r4,r5,r6,r7,r8,r9,r10,r11>,-
+		output=<r0,r1>,-
+		label=_clrldr
+.endc
+	$cmkrnl_s	-
+		routin	=	__clrldr,-
+		arglst	=	(AP)
+	ret
+
+	.end

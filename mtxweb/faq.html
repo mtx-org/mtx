@@ -1,0 +1,266 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-type" content="text/html;charset=UTF-8" />
+
+    <title>MTX Frequently Asked Questions</title>
+
+    <style type="text/css">
+      <!--
+        TH { background-color: aqua; }
+        TR { background-color: white; }
+        TD { text-align: left; }
+        H2 { text-align: center; }
+        BODY { background-color: white; }
+        A:link { color: blue; text-decoration: underline; }
+        A:active { text-decoration: underline; }
+        A:hover { text-decoration: underline; }
+        A:visited { color: blue; text-decoration: underline; }
+      -->
+    </style>
+  </head>
+
+  <body>
+    <table width="100%" border="0" cellspacing="0" cellpadding="10">
+      <tr valign="middle">
+        <th></th>
+        <th>
+          <h1>MTX Frequently Asked Questions</h1>
+        </th>
+      </tr>
+      <tr>
+        <th style="vertical-align:top; text-align:left">
+          <h2>Links:</h2>
+          <p>
+            <a href="http://sourceforge.net/projects/mtx">SourceForge Project</a>
+          </p>
+          <p>
+            <a href="http://mtx.opensource-sw.net">Home Page</a>
+          </p>
+          <p>
+            <a href="http://sourceforge.net/project/showfiles.php?group_id=4626">Downloads</a>
+          </p>
+          <p style="font-weight:bold; text-decoration:underline">Compatibility</p>
+          <p>
+            <a href="compatibility.php" style="margin-left: 1em">View</a>
+            <br />
+            <a href="contrib.php" style="margin-left: 1em">Submit</a>
+            <br />
+          </p>
+          <p>
+            <span style="font-weight:bold">FAQ</span>
+          </p>
+        </th>
+        <td rowspan="2">
+          <ul style="list-style-type:none">
+            <li><h3>Compiling</h3>
+              <ol>
+                <li>
+                  <a href="faq-I.html#q1">
+                    Where is the Makefile in the tarball?
+                  </a>
+                </li>
+                <li>
+                  <a href="faq-I.html#q2">
+                    Typing 'make' gives me a bunch of errors in the Makefile.<br />
+                    Why can't you provide a Makefile that works?
+                  </a>
+                </li>
+                <li>
+                  <a href="faq-I.html#q3">
+                    How do I compile for operating systems other than Linux?
+                  </a>
+                </li>
+                <li>
+                  <a href="faq-I.html#q4">
+                    How do I port it to OS's other than the supported ones?
+                  </a>
+                </li>
+              </ol>
+              <br />
+            </li>
+            <li><h3>Finding the correct device</h3>
+              <ol>
+                <li>
+                  <a href="faq-II.html#q1">
+                    Why does this command not work??<br />
+                    <tt># mtx -f /dev/st0 inquiry</tt><br />
+                    In /var/log/messages I see:<br />
+                    <tt>st0: Write not multiple of tape block size.</tt>
+                  </a>
+                </li>
+                <li>
+                  <a href="faq-II.html#q2">
+                    When I do 'mtx -f /dev/sga inquiry' it shows<br />
+                    <tt>
+                      Product Type: Tape Drive<br />
+                      Vendor Id: HP<br />
+                      Product ID: C1553A<br />
+                    </tt>
+                    But when I do a 'mtx -f /dev/sga status' it fails. Why?!
+                  </a>
+                </li>
+                <li>
+                  <a href="faq-II.html#q3">
+                    When I do 'cat /proc/scsi/scsi' it shows only one device, the 
+                    tape device!
+                  </a>
+                </li>
+                <li>
+                  <a href="faq-II.html#q4">
+                    I'm tired of typing '-f /dev/sgc' all the time. How do I set a default
+                    device that 'mtx' looks at?
+                  </a>
+                </li>
+                <li>
+                  <a href="faq-II.html#q5">
+                    I get<br />
+                    <tt>
+                    modprobe: can't locate module char-major-21<br />
+                    </tt> 
+                    syslog messages being squirreled away into a file on our syslog host,
+                    and mtx doesn't work. What's the problem?
+                  </a>
+                </li>
+                <li>
+                  <a href="faq-II.html#q6">
+                    When I installed mtx, a message showed up on the console stating that 
+                    a scsi changer was found at dev sgr. However, I have no device /dev/sgr.
+                  </a>
+                </li>
+              </ol>
+              <br />
+            </li>
+            <li><h3>Operational Issues</h3>
+              <ol>
+                <li>
+                  <a href="faq-III.html#q1">
+                    I'm using Red Hat 7.0 and mtx works fine when I type ./mtx from the
+                    command line, but when I use it from scripts I get the following:<br />
+                    <tt>
+                      mtx: Request Sense: Error Code=70 (Current)<br />
+                      mtx: Request Sense: Sense Key=Aborted Command<br />
+                      mtx: Request Sense: Additional Sense Code = 4E<br />
+                      mtx: Request Sense: Additional Sense Qualifier = 00<br />
+                    </tt>
+                    What's happening?
+                  </a>
+                </li>
+                <li>
+                  <a href="faq-III.html#q2">
+                    I get<br />
+                    <tt>
+                      # mtx -f /dev/sgr status<br />
+                      mtx: Request Sense: Error Code=70 (Current)<br />
+                      mtx: Request Sense: Sense Key=Not Ready<br />
+                      mtx: Request Sense: Additional Sense Code = 04<br />
+                      mtx: Request Sense: Additional Sense Qualifier = 8E<br />
+                      mtx: READ ELEMENT STATUS Command Failed<br />
+                    </tt>
+                    What gives?
+                  </a>
+                </li>
+                <li>
+                  <a href="faq-III.html#q3">
+                    I issue 'mtx load 5' and it loads tape 5. But when I try to put the tape
+                    back in the magazine, we hit problems:<br />
+                    <tt>
+                      mtx: MOVE MEDIUM from Element Address 82 to 5 Failed<br />
+                    </tt>
+                    What gives?
+                  </a>
+                </li>
+                <li>
+                  <a href="faq-III.html#q4">
+                    My Breece Hill loader does not properly report its slots.
+                  </a>
+                </li>
+                <li>
+                  <a href="faq-III.html#q5">
+                    My Breece Hill loader takes a long time to do an inventory. mtx times
+                    out and spits all over the place. Help!
+                  </a>
+                </li>
+                <li>
+                  <a href="faq-III.html#q6">
+                    How do I eject the magazine of my autoloader?
+                  </a>
+                </li>
+                <li>
+                  <a href="faq-III.html#q7">
+                    Is there a standard for cleaning tape bar codes?
+                  </a>
+                </li>
+                <li>
+                  <a href="faq-III.html#q8">
+                    Why do I get a message saying "no Data Transfer Element reported" 
+                    on my Sony XL1B changer?
+                  </a>
+                </li>
+                <li>
+                  <a href="faq-III.html#q9">
+                    How do I report a bug?
+                  </a>
+                </li>
+              </ol>
+            </li>
+          </ul>
+        </td>
+      </tr>
+      <tr>
+        <th style="text-align:center; vertical-align:bottom">
+          <p>
+            <a href="http://www.dreamhost.com/r.cgi?277748">
+              <img src="dh-100x75.gif" alt="DreamHost.com Logo"
+                   height="75" width="100" style="border:0" />
+            </a>
+          </p>
+          <p>
+            <a href="http://validator.w3.org/check?uri=referer" >
+              <img src="valid-xhtml10.png" alt="Valid XHTML 1.0 Strict" 
+                   height="31" width="88" style="border:0" />
+            </a>
+          </p>
+          <p>
+            <a href="http://sourceforge.net/projects/mtx">
+              <img src="http://sflogo.sourceforge.net/sflogo.php?group_id=4626&amp;type=16"
+                   width="150" height="40"
+                   alt="Get MTX: Media Changer Tools at SourceForge.net. Fast, secure and Free Open Source software downloads" />
+            </a>
+          </p>
+        </th>
+      </tr>
+      <tr>
+		<th>
+		</th>
+		<td>
+          <hr />
+          <table style="font-size:small" width="100%">
+            <tr>
+              <td style="text-align:left; width:33%">
+                Maintained by <a href="mailto:robertnelson@users.sourceforge.net">Robert Nelson</a>
+              </td>
+              <td style="text-align:center; width:34%">
+                Date Changed: <span id="DateChanged"></span>
+                <script type="text/javascript">
+                  var DateChanged = "$LastChangedDate: 2009-04-25 05:56:37 +0000 (Sat, 25 Apr 2009) $";
+                  DateChanged = DateChanged.replace(/.*: (.+) \(.*\$/, "$1");
+                  document.getElementById("DateChanged").innerHTML = DateChanged;
+                </script>
+              </td>
+              <td style="text-align:right; width:33%">
+                Changed By: <span id="ChangedBy"></span>
+                <script type="text/javascript">
+                  var ChangedBy = "$LastChangedBy: robertnelson $";
+                  ChangedBy = ChangedBy.replace(/.*: (.+) \$/, "$1");
+                  document.getElementById("ChangedBy").innerHTML = ChangedBy;
+                </script>
+              </td>
+            </tr>
+          </table>
+		</td>
+      </tr>
+    </table>
+  </body>
+</html>

@@ -1,0 +1,49 @@
+Debian
+======
+
+Maintainer: BDale Garbee (bdale@gag.com) (Official)
+Stable Version: 1.2.16rel-4
+Testing Version: 1.2.17rel-2
+
+Merged: Yes
+
+FreeBSD
+
+Maintainer: mbr@freebsd.org
+Stable Version: 1.2.17rel
+
+Merged: Yes
+
+Gentoo
+======
+
+Maintainer: Tom Gall (tgall@gentoo.org) (Last change)
+Stable Version: 1.2.18
+
+Merged: No changes
+
+Mandriva
+========
+
+Maintainer: Buchan Milne <bgmilne@linux-mandrake.com>
+Stable Version: 1.2.18-1mdk
+
+Merged: No changes
+
+
+Redhat
+======
+
+Maintainer: Jesse Keating <jkeating@redhat.com> (Last change) (jnovy@redhat.com)
+Stable Version: 1.2.18-8
+
+Merged: No additional changes
+
+
+SuSE
+====
+
+Maintainer http://www.suse.de/feedback
+Stable Version: 1.2.18rel-119
+
+Merged: No additional changes

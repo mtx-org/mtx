@@ -1,0 +1,242 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-type" content="text/html;charset=UTF-8" />
+
+    <title>MTX FAQ - Finding the Correct Device</title>
+
+    <style type="text/css">
+      <!--
+        TH { background-color: aqua; }
+        TR { background-color: white; }
+        TD { text-align: left; }
+        H2 { text-align: center; }
+        LI { vertical-align:top; }
+        BODY { background-color: white; }
+        A:link { color: blue; text-decoration: underline; }
+        A:active { text-decoration: underline; }
+        A:hover { text-decoration: underline; }
+        A:visited { color: blue; text-decoration: underline; }
+        .q_a { vertical-align:top; }
+      -->
+    </style>
+  </head>
+
+  <body>
+    <table width="100%" border="0" cellspacing="0" cellpadding="10">
+      <tr valign="middle">
+        <th></th>
+        <th>
+          <h1>MTX Frequently Asked Questions<br />Finding the Correct Device</h1>
+        </th>
+      </tr>
+      <tr valign="top">
+        <th style="text-align:left">
+          <h2>Links:</h2>
+          <p>
+            <a href="http://sourceforge.net/projects/mtx">SourceForge Project</a>
+          </p>
+          <p>
+            <a href="http://mtx.opensource-sw.net">Home Page</a>
+          </p>
+          <p>
+            <a href="http://sourceforge.net/project/showfiles.php?group_id=4626">Downloads</a>
+          </p>
+          <p style="font-weight:bold; text-decoration:underline">Compatibility</p>
+          <p>
+            <a href="compatibility.php" style="margin-left: 1em">View</a>
+            <br />
+            <a href="contrib.php" style="margin-left: 1em">Submit</a>
+            <br />
+          </p>
+          <p>
+            <a href="faq.html">FAQ</a>
+          </p>
+        </th>
+        <td rowspan="2">
+          <ol>
+            <li>
+              <table>
+                <tr>
+                  <td class="q_a" id="q1">Q:</td>
+                  <td>
+                    Why does this command not work??<br />
+                    <tt># mtx -f /dev/st0 inquiry</tt><br />
+                    In /var/log/messages I see:<br />
+                    <tt>st0: Write not multiple of tape block size.</tt>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="q_a">A:</td>
+                  <td>
+                    Note that mtx 1.2 and above use the SCSI GENERIC interface on Linux,
+                    FreeBSD, and Solaris (at least). They do NOT use the tape device node. Please
+                    read the man page for directions.
+                  </td>
+                </tr>
+              </table>
+            </li>
+            <li>
+              <table>
+                <tr>
+                  <td class="q_a" id="q2">Q:</td>
+                  <td>
+                    When I do 'mtx -f /dev/sga inquiry' it shows<br />
+                    <tt>
+                      Product Type: Tape Drive<br />
+                      Vendor Id: HP<br />
+                      Product ID: C1553A<br />
+                    </tt>
+                    But when I do a 'mtx -f /dev/sga status' it fails. Why?!
+                  </td>
+                </tr>
+                <tr>
+                  <td class="q_a">A:</td>
+                  <td>
+                    You're trying to send a robotics command to a tape drive. You need
+                    to send robotics commands to robotics devices, not to tape drives. Look in
+                    /proc/scsi/scsi (Linux) or camcontrol (FreeBSD) to find out what the
+                    robotics device is. It will be reported as a 'Medium Changer', not a
+                    'Sequential Access' or 'Tape Drive'.
+                  </td>
+                </tr>
+              </table>
+            </li>
+            <li>
+              <table>
+                <tr>
+                  <td class="q_a" id="q3">Q:</td>
+                  <td>
+                    When I do 'cat /proc/scsi/scsi' it shows only one device, the 
+                    tape device!
+                  </td>
+                </tr>
+                <tr>
+                  <td class="q_a">A:</td>
+                  <td>
+                    You are using a DAT autochanger that has one SCSI ID but two LUN's, LUN 0
+                    and LUN 1. You need to compile a new kernel with  SCAN SCSI LUNS enabled
+                    or add this line to your /etc/lilo.conf (then run /sbin/lilo and reboot): 
+                    append="max_scsi_luns=2"
+                  </td>
+                </tr>
+              </table>
+            </li>
+            <li>
+              <table>
+                <tr>
+                  <td class="q_a" id="q4">Q:</td>
+                  <td>
+                    I'm tired of typing '-f /dev/sgc' all the time. How do I set a default
+                    device that 'mtx' looks at?
+                  </td>
+                </tr>
+                <tr>
+                  <td class="q_a">A:</td>
+                  <td>
+                    Set the CHANGER environment variable. For example, with 'bash':
+                    export CHANGER=/dev/sgc
+                  </td>
+                </tr>
+              </table>
+            </li>
+            <li>
+              <table>
+                <tr>
+                  <td class="q_a" id="q5">Q:</td>
+                  <td>
+                    I get<br />
+                    <tt>
+                    modprobe: can't locate module char-major-21<br />
+                    </tt> 
+                    syslog messages being squirreled away into a file on our syslog host,
+                    and mtx doesn't work. What's the problem?
+                  </td>
+                </tr>
+                <tr>
+                  <td class="q_a">A:</td>
+                  <td>
+                    You need to compile SCSI generic support into your kernel (or as a module).
+                  </td>
+                </tr>
+              </table>
+            </li>
+            <li>
+              <table>
+                <tr>
+                  <td class="q_a" id="q6">Q:</td>
+                  <td>
+                    When I installed mtx, a message showed up on the console stating that 
+                    a scsi changer was found at dev sgr. However, I have no device /dev/sgr.
+                  </td>
+                </tr>
+                <tr>
+                  <td class="q_a">A:</td>
+                  <td>
+                    On Linux, do 'mknod /dev/sgr c 21 19' to create a device node. By default
+                    only 16 SCSI generic nodes are created, which might not be enough if
+                    you have multiple SCSI controllers with lots of devices.
+                  </td>
+                </tr>
+              </table>
+            </li>
+          </ol>
+        </td>
+      </tr>
+      <tr>
+        <th style="text-align:center; vertical-align:bottom">
+          <p>
+            <a href="http://www.dreamhost.com/r.cgi?277748">
+              <img src="dh-100x75.gif" alt="DreamHost.com Logo"
+                   height="75" width="100" style="border:0" />
+            </a>
+          </p>
+          <p>
+            <a href="http://validator.w3.org/check?uri=referer" >
+              <img src="valid-xhtml10.png" alt="Valid XHTML 1.0 Strict" 
+                   height="31" width="88" style="border:0" />
+            </a>
+          </p>
+          <p>
+            <a href="http://sourceforge.net/projects/mtx">
+              <img src="http://sflogo.sourceforge.net/sflogo.php?group_id=4626&amp;type=16"
+                   width="150" height="40"
+                   alt="Get MTX: Media Changer Tools at SourceForge.net. Fast, secure and Free Open Source software downloads" />
+            </a>
+          </p>
+        </th>
+      </tr>
+      <tr>
+		<th>
+		</th>
+		<td>
+          <hr />
+          <table style="font-size:small" width="100%">
+            <tr>
+              <td style="text-align:left; width:33%">
+                Maintained by <a href="mailto:robertnelson@users.sourceforge.net">Robert Nelson</a>
+              </td>
+              <td style="text-align:center; width:34%">
+                Date Changed: <span id="DateChanged"></span>
+                <script type="text/javascript">
+                  var DateChanged = "$LastChangedDate: 2009-04-25 05:56:37 +0000 (Sat, 25 Apr 2009) $";
+                  DateChanged = DateChanged.replace(/.*: (.+) \(.*\$/, "$1");
+                  document.getElementById("DateChanged").innerHTML = DateChanged;
+                </script>
+              </td>
+              <td style="text-align:right; width:33%">
+                Changed By: <span id="ChangedBy"></span>
+                <script type="text/javascript">
+                  var ChangedBy = "$LastChangedBy: robertnelson $";
+                  ChangedBy = ChangedBy.replace(/.*: (.+) \$/, "$1");
+                  document.getElementById("ChangedBy").innerHTML = ChangedBy;
+                </script>
+              </td>
+            </tr>
+          </table>
+		</td>
+      </tr>
+    </table>
+  </body>
+</html>

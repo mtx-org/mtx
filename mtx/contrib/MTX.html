@@ -1,0 +1,209 @@
+<HTML>
+<HEAD>
+<TITLE>TapeChanger::MTX - use 'mtx' to manipulate a tape library</TITLE>
+<LINK REV="made" HREF="mailto:none">
+</HEAD>
+
+<BODY>
+
+<A NAME="__index__"></A>
+<!-- INDEX BEGIN -->
+
+<UL>
+
+	<LI><A HREF="#name">NAME</A></LI>
+	<LI><A HREF="#synopsis">SYNOPSIS</A></LI>
+	<LI><A HREF="#description">DESCRIPTION</A></LI>
+	<LI><A HREF="#variables">VARIABLES</A></LI>
+	<LI><A HREF="#usage">USAGE</A></LI>
+	<LI><A HREF="#notes">NOTES</A></LI>
+	<LI><A HREF="#requirements">REQUIREMENTS</A></LI>
+	<LI><A HREF="#todo">TODO</A></LI>
+	<LI><A HREF="#see also">SEE ALSO</A></LI>
+	<LI><A HREF="#author">AUTHOR</A></LI>
+	<LI><A HREF="#copyright">COPYRIGHT</A></LI>
+</UL>
+<!-- INDEX END -->
+
+<HR>
+<P>
+<H1><A NAME="name">NAME</A></H1>
+<P>TapeChanger::MTX - use 'mtx' to manipulate a tape library</P>
+<P>
+<HR>
+<H1><A NAME="synopsis">SYNOPSIS</A></H1>
+<PRE>
+  use TapeChanger::MTX;</PRE>
+<PRE>
+  my $loaded = TapeChanger::MTX-&gt;loadedtape;
+  print &quot;Currently loaded: $loaded\n&quot; if ($loaded);</PRE>
+<PRE>
+  TapeChanger::MTX-&gt;loadtape('next');
+  my $nowloaded = TapeChanger::MTX-&gt;loadedtape; 
+  print &quot;Currently loaded: $nowloaded\n&quot; if ($nowloaded);
+</PRE>
+<PRE>
+
+See below for more available functions.</PRE>
+<P>
+<HR>
+<H1><A NAME="description">DESCRIPTION</A></H1>
+<P>TapeChanger::MTX is a module to manipulate a tape library using the 'mtx' 
+tape library program.  It is meant to work with a simple shell/perl script
+to load and unload tapes as appropriate, and to provide a interface for
+more complicated programs to do the same.  The below functions and
+variables should do as good a job as explaining this as anything.</P>
+<P>
+<HR>
+<H1><A NAME="variables">VARIABLES</A></H1>
+<DL>
+<DT><STRONG><A NAME="item_%24TapeChanger%3A%3AMTX%3A%3AMT_%3Ditem_%24TapeCha">$TapeChanger::MTX::MT
+=item $TapeChanger::MTX::MTX</A></STRONG><BR>
+<DD>
+What is the location of the 'mt' and 'mtx' binaries?  Can be set with
+'$MT' and '$MTX' in ~/.mtxrc, or defaults to '/usr/sbin/mt' and
+'/usr/local/sbin/mtx'.
+<P></P>
+<DT><STRONG><A NAME="item_%24TapeChanger%3A%3AMTX%3A%3ADRIVE">$TapeChanger::MTX::DRIVE</A></STRONG><BR>
+<DD>
+<DT><STRONG><A NAME="item_%24TapeChanger%3A%3AMTX%3A%3ACONTROL">$TapeChanger::MTX::CONTROL</A></STRONG><BR>
+<DD>
+What are the names of the tape (DRIVE) and changer (CONTROL) device
+nodes?  Can be set with $DRIVE or $CONTROL in ~/.mtxrc, or default to
+'/dev/rmt/0' and '/dev/changer' respectively.
+<P></P>
+<DT><STRONG><A NAME="item_%24TapeChanger%3A%3AMTX%3A%3AEJECT">$TapeChanger::MTX::EJECT</A></STRONG><BR>
+<DD>
+Does the tape drive have to eject the tape before the changer retrieves
+it?  It's okay to say 'yes' if it's not necessary, in most cases.  Can be
+set with $EJECT in ~/.mtxrc, or defaults to '1'.
+<P></P>
+<DT><STRONG><A NAME="item_%24TapeChanger%3A%3AMTX%3A%3AREADY_TIME">$TapeChanger::MTX::READY_TIME</A></STRONG><BR>
+<DD>
+How long should we wait to see if the drive is ready, in seconds, after
+mounting a volume?  Can be set with $READY_TIME in ~/.mtxrc, or defaults
+to 60.
+<P></P>
+<DT><STRONG><A NAME="item_%24TapeChanger%3A%3AMTX%3A%3ADEBUG">$TapeChanger::MTX::DEBUG</A></STRONG><BR>
+<DD>
+Print debugging information?  Set to '0' for normal verbosity, '1' for
+debugging information, or '-1' for 'quiet mode' (be as quiet as possible).
+<P></P></DL>
+<P>
+<HR>
+<H1><A NAME="usage">USAGE</A></H1>
+<P>This module uses the following functions:</P>
+<DL>
+<DT><STRONG><A NAME="item_tape_cmd">tape_cmd ( COMMAND )</A></STRONG><BR>
+<DD>
+<DT><STRONG><A NAME="item_mt_cmd">mt_cmd ( COMMAND )</A></STRONG><BR>
+<DD>
+Runs 'mtx' and 'mt' as appropriate.  <CODE>COMMAND</CODE> is the command you're
+trying to send to them.  Uses 'warn()' to print the commands to the screen
+if $TapeChanger::MTX::DEBUG is set.
+<P></P>
+<DT><STRONG><A NAME="item_numdrives">numdrives ()</A></STRONG><BR>
+<DD>
+<DT><STRONG><A NAME="item_numslots">numslots ()</A></STRONG><BR>
+<DD>
+<DT><STRONG><A NAME="item_loadedtape">loadedtape ()</A></STRONG><BR>
+<DD>
+Returns the number of drives, number of slots, and currently loaded tape
+values, respectively, by parsing <STRONG>tape_cmd('status')</STRONG>.
+<P></P>
+<DT><STRONG><A NAME="item_loadtape">loadtape ( SLOT [, DRIVE] )</A></STRONG><BR>
+<DD>
+Loads a tape into the tape changer, and waits until the drive is again
+ready to be written to.  <CODE>SLOT</CODE> can be any of the following (with the
+relevant function indicated):
+<PRE>
+  current       C&lt;loadedtape()&gt;
+  prev          C&lt;loadprevtape()&gt;
+  next          C&lt;loadnexttape()&gt;
+  first         C&lt;loadfirsttape()&gt;
+  last          C&lt;loadlasttape()&gt;
+  0             C&lt;_ejectdrive()&gt;
+  1..99         Loads the specified tape number, ejecting whatever is
+                currently in the drive.</PRE>
+<P><CODE>DRIVE</CODE> is the drive to load, and defaults to 0.  Returns 0 if
+successful, an error string otherwise.</P>
+<P></P>
+<DT><STRONG><A NAME="item_loadnexttape">loadnexttape ()</A></STRONG><BR>
+<DD>
+<DT><STRONG><A NAME="item_loadprevtape">loadprevtape ()</A></STRONG><BR>
+<DD>
+<DT><STRONG><A NAME="item_loadfirsttape">loadfirsttape ()</A></STRONG><BR>
+<DD>
+<DT><STRONG><A NAME="item_loadlasttape">loadlasttape ()</A></STRONG><BR>
+<DD>
+Loads the next, previous, first, and last tapes in the changer
+respectively.  Use <STRONG>tape_cmd('next')</STRONG>, <STRONG>tape_cmd('previous')</STRONG>, 
+<STRONG>tape_cmd('first')</STRONG>, and <STRONG>tape_cmd('last')</STRONG>, respectively.
+<P></P>
+<DT><STRONG><A NAME="item_ejecttape">ejecttape ()</A></STRONG><BR>
+<DD>
+Ejects the tape, by first ejecting the tape from the drive
+(<STRONG>mt_cmd(rewind)</STRONG> then <STRONG>mt_cmd(offline)</STRONG>) and then returning it to its
+slot (<STRONG>tape_cmd(unload)</STRONG>).  Returns 1 if successful, 0 otherwise.
+<P></P>
+<DT><STRONG><A NAME="item_resetchanger">resetchanger ()</A></STRONG><BR>
+<DD>
+Resets the changer, ejecting the tape and loading the first one from the
+changer.
+<P></P>
+<DT><STRONG><A NAME="item_checkdrive">checkdrive ()</A></STRONG><BR>
+<DD>
+Checks to see if the drive is ready or not, by waiting for up to 
+$TapeChanger::MTX::READY_TIME seconds to see if it can get status
+information using <STRONG>mt_cmd(status)</STRONG>.  Returns 1 if so, 0 otherwise.
+<P></P>
+<DT><STRONG><A NAME="item_reportstatus">reportstatus</A></STRONG><BR>
+<DD>
+Returns a string containing the loaded tape and the drive that it's
+mounted on.
+<P></P>
+<DT><STRONG><A NAME="item_cannot_run">cannot_run ()</A></STRONG><BR>
+<DD>
+Does some quick checks to see if you're actually capable of using this
+module, based on your user permissions.  Returns a list of problems if
+there are any, 0 otherwise.
+<P></P></DL>
+<P>
+<HR>
+<H1><A NAME="notes">NOTES</A></H1>
+<P>~/.mtxrc is automatically loaded when this module is used, if it exists,
+using do().  This could cause security problems if you're trying to use
+this with <CODE>setuid()</CODE> programs - so just don't do that.  If you want someone
+to have permission to mess with the tape drive and/or changer, let them
+have that permission directly.</P>
+<P>
+<HR>
+<H1><A NAME="requirements">REQUIREMENTS</A></H1>
+<P>Perl 5.6.0 or better, an installed 'mtx' binary, and a tape changer and
+reader connected to the system.</P>
+<P>
+<HR>
+<H1><A NAME="todo">TODO</A></H1>
+<P>Support for Input/Export slots is not included, though it may be later.
+Possibly works for multiple drives per changer, but I haven't tested it,
+so I probably missed something.  'load previous' doesn't actually work,
+because mtx doesn't support it (though the help says it does).</P>
+<P>
+<HR>
+<H1><A NAME="see also">SEE ALSO</A></H1>
+<P><STRONG>mtx</STRONG>, <STRONG>mt</STRONG>, <STRONG>tapechanger</STRONG>.  Inspired by <STRONG>stc-changer</STRONG>, which comes
+with the AMANDA tape backup package (http://www.amanda.org), and MTX,
+available at <A HREF="http://mtx.sourceforge.net.">http://mtx.sourceforge.net.</A></P>
+<P>
+<HR>
+<H1><A NAME="author">AUTHOR</A></H1>
+<P>Tim Skirvin &lt;<A HREF="mailto:tskirvin@uiuc.edu">tskirvin@uiuc.edu</A>&gt;</P>
+<P>
+<HR>
+<H1><A NAME="copyright">COPYRIGHT</A></H1>
+<P>Copyright 2001-2002 by the University of Illinois Board of Trustees and 
+Tim Skirvin &lt;<A HREF="mailto:tskirvin@ks.uiuc.edu">tskirvin@ks.uiuc.edu</A>&gt;.</P>
+
+</BODY>
+
+</HTML>

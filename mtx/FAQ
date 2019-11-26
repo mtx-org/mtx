@@ -1,0 +1,144 @@
+Frequently Asked Questions List, v 1.0.1
+
+Index: 
+  I. Compiling
+  II. Finding the correct device
+  III. Operational Issues
+
+Part I: Compiling.
+
+Q: Where is the Makefile in the tarball?
+A: MTX now uses GNU Autoconf to generate the Makefile. Type "./configure"
+   while in the extracted mtx directory. 
+
+Q: Typing 'make' gives me a bunch of errors in the Makefile. Why can't
+   you provide a Makefile that works?
+A: Note that you need the GNU 'make'. The BSD 'make' won't work, and 
+  Solaris 'make' probably won't work either. If you want a better
+  configuration and makefile system, write one, then EMAIL me the results --
+  mtx is Open Source software and needs your code contributions to grow. 
+
+Q: How do I compile for operating systems other than Linux?
+A: MTX no longer needs you to edit the Makefile to compile for operating
+   systems other than Linux. Just type ./configure and go with it. 
+
+Q: How do I port it to OS's other than the supported ones?
+A: Create a new scsi_ module using one of the existing modules as an
+   example (scsi_freebsd.c might be a good model). Decide what symbol
+   you want #ifdef'ed in order to include that scsi_ module. Edit
+   mtxl.c to #include your scsi_ module. Edit the Makefile to add the
+   new target, including the -D needed to #include your new scsi_ module. 
+
+*********************************************************************
+Part II: Finding the correct device. 
+
+Q: Why does this command not work??
+    [root@Scotty mtxl-1.4.8]# ./mtx -f /dev/st0 inquiry
+   In /var/log/messages I see:
+      st0: Write not multiple of tape block size. 
+A: Note that mtx 1.2 and above use the SCSI GENERIC interface on Linux,
+  FreeBSD, and Solaris (at least). They do NOT use the tape device node.
+
+Q: When I do 'mtx -f /dev/sga inquiry' it shows 
+      Product Type: Tape Drive
+      Vendor Id: HP       
+      Product ID: C1553A 
+   But when I do a 'mtx -f /dev/sga status' it fails. Why?!
+A: You're trying to send a robotics command to a tape drive. You need
+   to send robotics commands to robotics devices, not to tape drives. Look in
+  /proc/scsi/scsi (Linux) or camcontrol (FreeBSD) to find out what the
+  robotics device is. It will be reported as a 'Medium Changer', not a
+  'Sequential Access' or 'Tape Drive'.
+
+Q: When I do 'cat /proc/scsi/scsi' it shows only one device, the tape device!
+A: You are using a DAT autochanger that has one SCSI ID but two LUN's, LUN 0
+   and LUN 1. You need to compile a new kernel with  SCAN SCSI LUNS enabled
+   or add this line to your /etc/lilo.conf (then run /sbin/lilo and reboot): 
+       append="max_scsi_luns=2"
+
+Q: I'm tired of typing '-f /dev/sgc' all the time. How do I set a default
+  device that 'mtx' looks at?
+A: Set the CHANGER environment variable. For example, with 'bash':
+     export CHANGER=/dev/sgc
+
+Q: I get "modprobe: can't locate module char-major-21"
+   syslog messages being squirreled away into a file on our syslog host,
+   and mtx doesn't work. What's the problem?
+A: You need to compile SCSI generic support into your kernel (or as a module).
+
+Q: When I installed mtx, a message showed 
+   up on the console stating that a scsi changer was found at
+   dev sgr. However, I have no device /dev/sgr.
+A: On Linux, do 'mknod /dev/sgr c 21 19' to create a device node. By default
+  only 16 SCSI generic nodes are created, which might not be enough if
+  you have multiple SCSI controllers with lots of devices.
+
+******************************************************
+III. Operational issues:
+
+Q: I'm using Red Hat 7.0 and mtx works fine when I type ./mtx from the
+   command line, but when I use it from scripts I get the following:
+    mtx: Request Sense: Error Code=70 (Current)
+    mtx: Request Sense: Sense Key=Aborted Command
+    mtx: Request Sense: Additional Sense Code = 4E
+    mtx: Request Sense: Additional Sense Qualifier = 00
+   What's happening?
+A: Do "rpm -e mtx". Red Hat 7.0 includes a busted version of mtx. Your
+   script is apparently picking up the busted mtx in your path. Get rid
+   of the busted mtx, make sure that /usr/local/bin (or wherever you
+   put the "good" mtx) is in the path, and all should be well. 
+
+Q: I get
+   # /usr/local/bin/mtx -f /dev/sgr status
+   mtx: Request Sense: Error Code=70 (Current)
+   mtx: Request Sense: Sense Key=Not Ready
+   mtx: Request Sense: Additional Sense Code = 04
+   mtx: Request Sense: Additional Sense Qualifier = 8E
+   mtx: READ ELEMENT STATUS Command Failed
+  What gives?
+A: Make sure your loader is in random mode, not sequential mode.
+   Most "real" loaders (as vs. DAT autoloaders) will not properly report
+   status information unless they are in "random" mode. 
+
+
+Q: I issue 'mtx load 5' and it loads tape 5. But when I try to put the tape
+   back in the magazine, we hit problems:
+      mtx: MOVE MEDIUM from Element Address 82 to 5 Failed
+   What gives?
+A: Many loaders require you to first eject the tape (using 'mt' or 'tapectl')
+  before you issue an 'unload' command via 'mtx'. 
+
+Q: My Breece Hill loader does not properly report its slots.
+A: Either set the "auto-inventory" feature in the loader's control panel, 
+   or run 'mtx inventory' prior to running 'mtx status'. 
+
+Q: My Breece Hill loader takes a long time to do an inventory. mtx times
+   out and spits all over the place. Help!
+A: Many loaders that support barcodes will perform poorly if you place tapes
+  into them without bar codes. Place bar codes on all your tapes and you
+  should be able to run 'mtx inventory' without that failure.
+
+Q: How do I eject the magazine of my autoloader?
+A: Many low-end DAT autoloaders support the removable media 'EJECT' command 
+   sent to the robotics device, even though it's not documented (or required)
+   in the SCSI standards. If the loader is at /dev/sgb, simply do 
+   'mtx -f /dev/sgb eject' and see what happens. (If nothing happens, 
+    your autoloader doesn't support 'eject'). Some high-end libraries have 
+   their own proprietary way for ejecting magazine trays, generally 
+   involving abuse of the 'transfer' command and 'eepos' addendums,
+    but this is totally non-standard and undocumented. 
+
+Q: Is there a standard for cleaning tape bar codes?
+A: Many libraries, and many backup programs, expect cleaning tape bar 
+   codes to start with "CLN". 
+
+Q: How do I report a bug?
+A: First, read this FAQ. Next, check the mtx list archives at
+   http://mtx.sourceforge.net to make sure that it's not already addressed 
+   by somebody else. If your problem is still not solved, send 
+   (to the mtx list) the following information:
+        Result of 'mtx inquiry' on the loader, 
+        Result of 'mtx status' on the loader (minus a bunch of tapes if
+          it's a 50+ tape loader!), 
+        Results of the operation that isn't working correctly. 
+

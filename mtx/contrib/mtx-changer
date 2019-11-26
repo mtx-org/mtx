@@ -1,0 +1,431 @@
+#! /bin/sh
+###############################################################################
+# AMANDA Tape Changer script for use with the MTX tape changer program
+# Version 1.0 - Tue Feb 20 13:59:39 CST 2001
+# 
+# Based on 'stc-changer' by Eric Berggren (eric@ee.pdx.edu)
+# Updated by Tim Skirvin (tskirvin@ks.uiuc.edu)
+# 
+# Given that there's no license...let's make this the Perl Artistic License.
+# Just make sure you give me and Eric credit if you modify this.  
+###############################################################################
+
+### USER CONFIGURATION
+# Name of the tape drive (takes place of "tapedev" option in amanda.conf)
+#  and default driver number in library (usu 0) that DRIVE_NAME points to
+DRIVE_NAME="/dev/rmt/0n"
+DRIVE_NUM=0
+
+# Location of "STC" command and control device
+MTX_CMD="/usr/local/sbin/mtx";
+MTX_CONTROL="/dev/scsi/changer/c4t1d0";
+
+# Whether tape drive must eject tape before changer retrieves
+#  (ie, EXB-2x0). Usually okay if set while not necessary, bad if
+#  required but not set.
+DRIVE_MUST_EJECT=1
+
+# How long to check drive readiness (in seconds) after mounting (or
+#  ejecting) a volume (on some libraries, the motion or eject command may
+#  complete before the drive has the volume fully mounted and online,
+#  or ready for retrieval, resulting in "Drive not ready"/"Media not
+#  ready" errors). Do an "mt status" command every 5 seconds upto this
+#  time.
+DRIVE_READY_TIME_MAX=120
+
+#  tape "mt" command location...
+MT_CMD="/usr/bin/mt"     # called via "MT_CMD -f DRIVE_NAME rewind" &
+                         #   "MT_CMD -f DRIVE_NAME offline" to eject
+                         # and "MT_CMD -f DRIVE_NAME status" to get ready info
+
+##############################################################################
+#
+NumDrives=-1
+NumSlots=-1
+LastSlot=-1
+LoadedTape=-1
+
+#
+# Usage information
+#
+usage()
+{
+    echo
+    echo "Usage: $Progname <command> [arg...]"
+    echo "  -info          reports capability and loaded tape"
+    echo "  -slot <slot>   loads specified tape into drive"
+    echo "        current  reports current mounted tape"
+    echo "        next     loads logically next tape (loops to top)"
+    echo "        prev     loads logically previous tape (loops to bot)"
+    echo "        first    loads first tape"
+    echo "        last     loads last tape"
+    echo "        0..99    loads tape from specified slot#"
+    echo "  -eject         uloads current mounted tape"
+    echo "  -reset         resets changer (and drive); loads first tape"
+    echo
+    exit 5
+}
+
+#
+# Perform "stc" changer command (& handle the "fatal" errors)
+#  else, set 'CommandResStr' and 'CommandRawResStr' to the result string 
+#  and 'CommandResCode' to the exit code
+#
+dotapecmd()
+{
+    cmd=$1
+    arg=$2
+
+    CommandResStr=`$MTX_CMD $MTX_CONTROL $cmd $arg 2>&1`
+    CommandRawResStr=$CommandResStr
+    CommandResCode=$?
+
+    CommandResStr=`echo $CommandResStr | head -1 | sed 's/^[^:]*: //'`
+    if [ $CommandResCode -gt 1 ]; then
+        echo "0 $Progname: returned $CommandResStr"
+        exit 2
+    fi
+}
+
+#
+# Unload tape from drive (a drive command; "ejecttape" is a changer command
+#  to actually retrieve the tape). Needed by some changers (controlled by
+#  setting "DRIVE_MUST_EJECT")
+#
+ejectdrive()
+{
+    # Tell drive to eject tape before changer retrieves; req'd by some
+    #  drives (ie, EXB-2x0). Not needed by QDLT-4x00. Do a "rewind"
+    #  command first, then "offline" to eject (instead of "rewoffl")
+    #
+    if [ "$DRIVE_MUST_EJECT" -ne 0 ]; then
+        mtresstr=`$MT_CMD -f $DRIVE_NAME rewind 2>&1`
+        mtrescode=$?
+
+        if [ $mtrescode -ne 0 ]; then
+            if echo "$mtresstr" | egrep -s 'no tape'; then
+                :;   # no tape mounted; assume okay...
+            else
+                # can't eject tape, bad; output: <tape#> reason
+                echo "0 $mtresstr"
+                exit 1
+            fi
+        else
+            mtresstr=`$MT_CMD -f $DRIVE_NAME offline 2>&1`
+            mtrescode=$?
+
+            checkdrive 1
+        fi
+    fi
+}
+
+#
+# Check drive readiness after (un)mounting a volume (which may take a while
+#  after the volume change command completes)
+#
+checkdrive()
+{
+    unmounting=$1
+
+    if [ "$DRIVE_READY_TIME_MAX" -gt 0 ]; then
+
+        # sleep time between checks
+        pausetime=5
+
+        # number of interations to check
+        numchecks=`expr $DRIVE_READY_TIME_MAX / $pausetime`
+        if [ "$numchecks" -eq 0 ]; then
+            numchecks=1
+        fi
+
+        # check until success, or out of attempts...
+        while [ "$numchecks" -gt 0 ]; do
+            mtresstr=`$MT_CMD -f $DRIVE_NAME status 2>&1`
+            mtrescode=$?
+
+            if [ $mtrescode -eq 0 ]; then
+                # Success ?
+                return 0
+            else
+                # pause, before trying again....
+                if [ "$numchecks" -gt 1 ]; then
+                    sleep $pausetime
+
+                    # if unmounting a volume, check for 'mt' command
+                    #  failure; (sleep first for additional comfort)
+                    if [ "$unmounting" -ne 0 ]; then
+                        return 0
+                    fi
+                fi
+            fi
+            numchecks=`expr $numchecks - 1`
+        done
+
+        # failed; output: -1 reason
+        echo "-1 drive won't report ready"
+        exit 1
+    fi
+}
+
+#
+# Get changer parameters
+#
+getchangerparms()
+{
+    dotapecmd status
+    if [ $CommandResCode -eq 0 ] && \
+        echo "$CommandResStr" | egrep -s '^Storage Changer'; then
+
+        NumDrives=`echo $dspec | wc -l`
+	NumDrives=`echo "$CommandRawResStr" | \
+			grep 'Data Transfer Element' | wc -l`
+        if [ "$NumDrives" -le "$DRIVE_NUM" ]; then
+            echo "$Program: Invalid drive # specified ($DRIVE_NUM > $NumDrives)"
+            exit 3
+        fi
+			# grep 'Data Transfer Element $DRIVE_NUM' | \
+	LoadedTape=`echo "$CommandRawResStr" | \
+			grep 'Data Transfer Element' | \
+			grep 'Storage Element [0-9]' | \
+			awk '{ print $7 }'	`
+        if [ -z "$LoadedTape" -o "$LoadedTape" = "e" ]; then
+            LoadedTape=-1
+        fi
+        NumSlots=`echo "$CommandRawResStr" | \
+		grep 'Storage Element [0-9]\{1,\}:' | \
+		grep -v 'Data Element' | \
+		wc -l | sed -e 's/ //g' `
+        LastSlot=`expr $NumSlots - 1`
+    else
+        echo \
+          "$Progname: Can't get changer parameters; Result was $CommandResStr"
+        exit 3
+    fi
+}
+    
+#
+# Display changer info
+#
+changerinfo()
+{
+    getchangerparms
+
+    # output status string: currenttape numslots randomaccess?
+    echo "$LoadedTape $NumSlots 1"
+    exit 0
+}
+
+#
+# Eject current mounted tape
+#
+ejecttape()
+{
+    getchangerparms
+    ct=$LoadedTape
+
+    # If no tape reported mounted, assume success (could be bad if changer
+    #  lost track of tape)
+    #
+    if [ $ct -lt 0 ]; then
+        CommandResCode=0
+    else
+        ejectdrive
+        dotapecmd unload
+    fi
+
+    if [ $CommandResCode -ne 0 ]; then
+        # failed; output: <tape#> reason
+        echo "$ct $CommandResStr"
+        exit 1
+    else
+        # success; output: <tape#> drive
+        echo "$ct $DRIVE_NAME"
+        exit 0
+    fi
+}
+
+#
+# Move specified tape into drive (operation level)
+#
+doloadtape()
+{
+    slot=$1
+    if [ "$slot" -eq "$LoadedTape" ]; then
+        return 0
+    fi
+    ejectdrive
+    dotapecmd load $slot
+    return $CommandResCode
+}
+
+#
+# Load next available tape into drive
+#
+loadnexttape()
+{
+    curslot=$1
+    direction=$2
+
+    startslot=$curslot
+    while true; do
+        if doloadtape $curslot; then
+            return 0
+        else
+            if echo $CommandResStr | egrep -s 'Slot.*reported empty'; then
+
+                if [ "$direction" -lt 0 ]; then
+                    curslot=`expr $curslot - 1`
+                    if [ "$curslot" -lt 0 ]; then
+                        curslot=$LastSlot
+                    fi
+                else
+                    curslot=`expr $curslot + 1`
+                    if [ "$curslot" -gt "$LastSlot" ]; then
+                        curslot=0
+                    fi
+                fi
+
+                # Check if we're back to where we started...
+                if [ "$curslot" = "$startslot" ]; then
+                    if [ "$direction" -lt 0 ]; then
+                        CommandResStr="No previous volume available"
+                    else
+                        CommandResStr="No subsequent volume available"
+                    fi
+                    return 1
+                fi
+            else
+                return 1
+            fi
+        fi
+    done
+}
+
+#
+# Report loadtape() status
+#
+reportstatus()
+{
+    if [ $CommandResCode -eq 0 ]; then
+        # success; output currenttape drivename
+        echo "$LoadedTape $DRIVE_NAME"
+        exit 0
+    else
+        # failed (empty slot?); output currenttape reason
+        echo "$LoadedTape $CommandResStr"
+        exit 1
+    fi
+}
+
+
+#
+# Move specified tape into drive (command level)
+#
+loadtape()
+{
+    slot=$1
+
+    getchangerparms
+
+    case "$slot" in
+        current)
+            if [ $LoadedTape -lt 0 ]; then
+                CommandResStr="Can't determine current tape; drive empty ?"
+                CommandResCode=1
+            fi
+            ;;
+        prev)
+            if [ $LoadedTape -le 0 ]; then
+                loadnexttape $LastSlot -1
+            else
+                loadnexttape `expr $LoadedTape - 1` -1
+            fi
+            ;;
+        next)
+            if [ $LoadedTape -ge $LastSlot -o $LoadedTape -lt 0 ]; then
+                loadnexttape 0 1
+            else
+                loadnexttape `expr $LoadedTape + 1` 1
+            fi
+            ;;
+        first)
+            loadnexttape 0 1
+            ;;
+        last)
+            loadnexttape $LastSlot -1
+            ;;
+        [0-9]*)
+            doloadtape $slot
+            ;;
+        *)
+            # error; no valid slot specified
+            echo "$Progname: No valid slot specified"
+            exit 1
+            ;;
+    esac
+
+    if [ $CommandResCode -eq 0 ]; then
+        getchangerparms
+        checkdrive
+    fi
+    reportstatus
+}
+
+#
+# Reset changer to known state
+#
+resetchanger()
+{
+    ejectdrive
+    dotapecmd reset
+    if [ $CommandResCode -ne 0 ]; then
+        # failed; output: failed? reason
+        echo "-1 $CommandResStr"
+        exit 2;
+    else
+        loadtape first
+    fi
+}
+
+#############################################################################
+#
+# MAIN
+#
+Progname=`basename $0`
+
+if [ ! -x "$MTX_CMD" ]; then
+    echo "-1 $Progname: cannot run STC command ($MTX_CMD)"
+    exit 2
+fi
+if [ -n "$MTX_CONTROL" ]; then
+    if echo "$MTX_CONTROL" | egrep -s '^-f'; then
+        :;
+    else
+        MTX_CONTROL="-f $MTX_CONTROL"
+    fi
+fi
+if [ -n "$DRIVE_NUM" ]; then
+    DRIVE_NUM=0
+fi
+
+if [ $# -ge 1 ]; then command=$1; else command="-usage"; fi
+
+case "$command" in
+    -info)
+        changerinfo
+        ;;
+    -slot)
+        loadtape $2
+        ;;
+    -eject)
+        ejecttape
+        ;;
+    -reset)
+        resetchanger
+        ;;
+    *)
+        usage
+        ;;
+esac
+
+exit 0

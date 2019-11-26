@@ -1,0 +1,15 @@
+manpages="mtx.1 tapeinfo.1 loaderinfo.1 scsitape.1 scsieject.1"
+txtpages="mtx.txt tapeinfo.txt loaderinfo.txt scsitape.txt scsieject.txt"
+htmlpages="mtx.html tapeinfo.html loaderinfo.html scsitape.html scsieject.html"
+
+./configure --host=mingw32
+make
+make dbgs
+
+for i in $manpages
+do
+	groff -et -Thtml -mandoc $i | col -b > `basename $i .1`.html
+	groff -et -Tascii -mandoc $i | col -b > `basename $i .1`.txt
+done
+
+zip mtx-$1.zip README.win32 *.exe $htmlpages $txtpages

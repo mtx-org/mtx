@@ -1,0 +1,19 @@
+#!/bin/sh
+
+# note -- this assumes 'bash' shell, GNU tar, 'gzip'. 
+
+# pass a version number e.g. 1.4.3 as 1st parameter...
+ME=`pwd`
+
+# okay, now to create a spec file w/the proper version number:
+sed -e "1,\$s/@@VERSION@@/${1}/g" <mtx.spec.in >mtx.spec
+
+cd ..
+if [ ! -s mtx-${1} ]
+then
+   ln -s "${ME}" "mtx-${1}"
+fi
+
+
+tar --exclude CVS --exclude .svn -czvhf mtx-${1}.tar.gz mtx-${1}
+

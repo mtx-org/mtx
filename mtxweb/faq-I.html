@@ -1,0 +1,185 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-type" content="text/html;charset=UTF-8" />
+
+    <title>MTX FAQ - Compiling</title>
+
+    <style type="text/css">
+      <!--
+        TH { background-color: aqua; }
+        TR { background-color: white; }
+        TD { text-align: left; }
+        H2 { text-align: center; }
+        LI { vertical-align:top; }
+        BODY { background-color: white; }
+        A:link { color: blue; text-decoration: underline; }
+        A:active { text-decoration: underline; }
+        A:hover { text-decoration: underline; }
+        A:visited { color: blue; text-decoration: underline; }
+        .q_a { vertical-align:top; }
+      -->
+    </style>
+  </head>
+
+  <body>
+    <table width="100%" border="0" cellspacing="0" cellpadding="10">
+      <tr valign="middle">
+        <th></th>
+        <th>
+          <h1>MTX Frequently Asked Questions<br />Compiling</h1>
+        </th>
+      </tr>
+      <tr>
+        <th style="vertical-align:top; text-align:left">
+          <h2>Links:</h2>
+          <p>
+            <a href="http://sourceforge.net/projects/mtx">SourceForge Project</a>
+          </p>
+          <p>
+            <a href="http://mtx.opensource-sw.net">Home Page</a>
+          </p>
+          <p>
+            <a href="http://sourceforge.net/project/showfiles.php?group_id=4626">Downloads</a>
+          </p>
+          <p style="font-weight:bold; text-decoration:underline">Compatibility</p>
+          <p>
+            <a href="compatibility.php" style="margin-left: 1em">View</a>
+            <br />
+            <a href="contrib.php" style="margin-left: 1em">Submit</a>
+            <br />
+          </p>
+          <p>
+            <a href="faq.html">FAQ</a>
+          </p>
+        </th>
+        <td rowspan="2">
+          <ol>
+            <li>
+              <table>
+                <tr>
+                  <td class="q_a" id="q1">Q:</td>
+                  <td>Where is the Makefile in the tarball?</td>
+                </tr>
+                <tr>
+                  <td class="q_a">A:</td>
+                  <td>
+                    MTX now uses GNU Autoconf to generate the Makefile. Type "./configure"
+                    while in the extracted mtx directory. 
+                  </td>
+                </tr>
+              </table>
+            </li>
+            <li>
+              <table>
+                <tr>
+                  <td class="q_a" id="q2">Q:</td>
+                  <td>
+                    Typing 'make' gives me a bunch of errors in the Makefile. Why can't
+                    you provide a Makefile that works?
+                  </td>
+                </tr>
+                <tr>
+                  <td class="q_a">A:</td>
+                  <td>
+                    Note that you need the GNU 'make'. The BSD 'make' won't work, and 
+                    Solaris 'make' probably won't work either. If you want a better
+                    configuration and makefile system, write one, then EMAIL me the results --
+                    mtx is Open Source software and needs your code contributions to grow.
+                  </td>
+                </tr>
+              </table>
+            </li>
+            <li>
+              <table>
+                <tr>
+                  <td class="q_a" id="q3">Q:</td>
+                  <td>How do I compile for operating systems other than Linux?</td>
+                </tr>
+                <tr>
+                  <td class="q_a">A:</td>
+                  <td>
+                    MTX no longer needs you to edit the Makefile to compile for operating
+                    systems other than Linux. Just type ./configure and go with it.
+                  </td>
+                </tr>
+              </table>
+            </li>
+            <li>
+              <table>
+                <tr>
+                  <td class="q_a" id="q4">Q:</td>
+                  <td>How do I port it to OS's other than the supported ones?</td>
+                </tr>
+                <tr>
+                  <td class="q_a">A:</td>
+                  <td>
+                    Create a new scsi_ module using one of the existing modules as an
+                    example (scsi_freebsd.c might be a good model). Decide what symbol
+                    you want #ifdef'ed in order to include that scsi_ module. Edit
+                    mtxl.c to #include your scsi_ module. Edit the Makefile to add the
+                    new target, including the -D needed to #include your new scsi_ module. 
+                  </td>
+                </tr>
+              </table>
+            </li>
+          </ol>
+        </td>
+      </tr>
+      <tr>
+        <th style="text-align:center; vertical-align:bottom">
+          <p>
+            <a href="http://www.dreamhost.com/r.cgi?277748">
+              <img src="dh-100x75.gif" alt="DreamHost.com Logo"
+                   height="75" width="100" style="border:0" />
+            </a>
+          </p>
+          <p>
+            <a href="http://validator.w3.org/check?uri=referer" >
+              <img src="valid-xhtml10.png" alt="Valid XHTML 1.0 Strict" 
+                   height="31" width="88" style="border:0" />
+            </a>
+          </p>
+          <p>
+            <a href="http://sourceforge.net/projects/mtx">
+              <img src="http://sflogo.sourceforge.net/sflogo.php?group_id=4626&amp;type=16"
+                   width="150" height="40"
+                   alt="Get MTX: Media Changer Tools at SourceForge.net. Fast, secure and Free Open Source software downloads" />
+            </a>
+          </p>
+        </th>
+      </tr>
+      <tr>
+		<th>
+		</th>
+		<td>
+          <hr />
+          <table style="font-size:small" width="100%">
+            <tr>
+              <td style="text-align:left; width:33%">
+                Maintained by <a href="mailto:robertnelson@users.sourceforge.net">Robert Nelson</a>
+              </td>
+              <td style="text-align:center; width:34%">
+                Date Changed: <span id="DateChanged"></span>
+                <script type="text/javascript">
+                  var DateChanged = "$LastChangedDate: 2009-04-25 05:56:37 +0000 (Sat, 25 Apr 2009) $";
+                  DateChanged = DateChanged.replace(/.*: (.+) \(.*\$/, "$1");
+                  document.getElementById("DateChanged").innerHTML = DateChanged;
+                </script>
+              </td>
+              <td style="text-align:right; width:33%">
+                Changed By: <span id="ChangedBy"></span>
+                <script type="text/javascript">
+                  var ChangedBy = "$LastChangedBy: robertnelson $";
+                  ChangedBy = ChangedBy.replace(/.*: (.+) \$/, "$1");
+                  document.getElementById("ChangedBy").innerHTML = ChangedBy;
+                </script>
+              </td>
+            </tr>
+          </table>
+		</td>
+      </tr>
+    </table>
+  </body>
+</html>
