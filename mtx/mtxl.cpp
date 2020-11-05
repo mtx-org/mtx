@@ -39,6 +39,8 @@
 /* zap the following define when we finally add real import/export support */
 #define IMPORT_EXPORT_HACK 1 /* for the moment, import/export == storage */
 
+#define ReadElementStatusMaxElements 10000
+
 /* First, do some SCSI routines: */
 
 /* the camlib is used on FreeBSD. */
@@ -492,7 +494,7 @@ ElementModeSense_T *ReadAssignmentPage(DEVICE_TYPE MediumChangerFD)
 	retval->MaxReadElementStatusData =
 		(sizeof(ElementStatusDataHeader_T) +
 		4 * sizeof(ElementStatusPage_T) +
-		retval->NumElements * sizeof(TransportElementDescriptor_T));
+		(retval->NumElements > ReadElementStatusMaxElements?ReadElementStatusMaxElements:retval->NumElements) * sizeof(TransportElementDescriptor_T));
 
 #ifdef IMPORT_EXPORT_HACK
 	retval->NumStorage = retval->NumStorage+retval->NumImportExport;
@@ -1133,7 +1135,8 @@ ElementStatus_T *ReadElementStatus(DEVICE_TYPE MediumChangerFD, RequestSense_T *
 	int empty_idx = 0;
 	boolean is_attached = false;
 	int i,j;
-
+	int FirstElement, NumElements, NumThisTime;
+	
 	ElementModeSense_T *mode_sense = NULL;
 
 	if (inquiry_info->MChngr && inquiry_info->PeripheralDeviceType != MEDIUM_CHANGER_TYPE)
@@ -1199,15 +1202,24 @@ ElementStatus_T *ReadElementStatus(DEVICE_TYPE MediumChangerFD, RequestSense_T *
 		fprintf(stderr,"Using original element status polling method (storage, import/export, drivers etc independantly)\n");
 #endif
 		flags->elementtype = StorageElement; /* sigh! */
-		DataBuffer = SendElementStatusRequest(	MediumChangerFD, RequestSense,
-												inquiry_info, flags,
-												mode_sense->StorageStart,
-												/* adjust for import/export. */
-												mode_sense->NumStorage - mode_sense->NumImportExport,
-												mode_sense->MaxReadElementStatusData);
+		NumElements = mode_sense->NumStorage - mode_sense->NumImportExport;
+		FirstElement = mode_sense->StorageStart;
 
-		if (!DataBuffer)
-		{
+		do
+ 		{
+
+			NumThisTime = NumElements;
+			if (NumThisTime > ReadElementStatusMaxElements) NumThisTime=ReadElementStatusMaxElements;
+
+			DataBuffer = SendElementStatusRequest(	MediumChangerFD, RequestSense,
+								inquiry_info, flags,
+								FirstElement,
+								/* adjust for import/export. */
+								NumThisTime,
+								mode_sense->MaxReadElementStatusData);
+
+			if (!DataBuffer)
+			{
 #ifdef DEBUG
 			fprintf(stderr,"Had no elements!\n");
 #endif
@@ -1217,15 +1229,18 @@ ElementStatus_T *ReadElementStatus(DEVICE_TYPE MediumChangerFD, RequestSense_T *
 #endif
 			FreeElementData(ElementStatus);
 			return NULL; 
-		}
+			}
 
 #ifdef DEBUG
-		fprintf(stderr, "Parsing storage elements\n");
+			fprintf(stderr, "Parsing storage elements\n");
 #endif
-		ParseElementStatus(EmptyStorageElementAddress, &EmptyStorageElementCount,
-			DataBuffer,ElementStatus,mode_sense,NULL);
+			ParseElementStatus(EmptyStorageElementAddress, &EmptyStorageElementCount,
+				DataBuffer,ElementStatus,mode_sense,NULL);
 
-		free(DataBuffer); /* sigh! */
+			free(DataBuffer); /* sigh! */
+			FirstElement += NumThisTime;
+			NumElements -= NumThisTime;
+		} while ( NumElements > 0 );
 
 		/* --------------IMPORT/EXPORT--------------- */
 		/* Next let's see if we need to do Import/Export: */
