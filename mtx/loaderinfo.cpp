@@ -487,7 +487,14 @@ int main(int argc, char **argv)
 	argv0=argv[0];
 	if (argc != 3)
 	{
-		fprintf(stderr,"argc=%d",argc);
+	        if (argc < 3)
+                {
+                        fprintf(stderr,"ERROR: Too few arguments\n");
+                }
+                if (argc > 3)
+                {
+                        fprintf(stderr,"ERROR: %d too many arguments\n", argc-3);
+                }
 		usage();
 	}
 
