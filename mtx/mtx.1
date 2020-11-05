@@ -130,7 +130,6 @@ may need to eject the tape using your OS's tape control commands
 first).  Note that this command may not be what you want on large
 tape libraries -- e.g. on Exabyte 220, the first slot is usually a
 cleaning tape. If <drivenum> is omitted, defaults to first drive.
-
 .TP 10
 .B last [<drivenum>]
 Loads drive <drivenum> from the last slot in the media changer. Unloads
@@ -141,9 +140,16 @@ the tape using your OS's tape control commands first).
 Unloads the drive and loads the next tape in sequence. If the drive was
 empty, loads the first tape into the drive.
 .TP 10
+.B previous [<drivenum>]
+Unloads the drive and loads the previous tape in sequence. If the drive
+was empty, loads the first tape into the drive.
+.TP 10
 .B position <slotnum>
 Positions the robot at a specific slot. Needed by some changers to
 move to and open the import/export, or mailbox, slot.
+.TP 10
+.B eject
+Eject the tape currently in the drive.
 
 .SH AUTHORS
 The original 'mtx' program was written by Leonard Zubkoff and extensively
