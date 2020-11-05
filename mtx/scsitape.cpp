@@ -62,8 +62,7 @@
 #endif
 
 void Usage(void) {
-  FatalError("Usage: scsitape -f <generic-device> <command> where <command> is:\n setblk <n> | fsf <n> | bsf <n> | eod | rewind | eject | mark <n> |\n  seek <n> | read [<blksize> [<numblocks]] | write [<blocksize>] \n");
-}
+FatalError("Usage: scsitape -f <generic-device> <command> where <command> is:\n setblk <n> | fsf <n> | bsf <n> | eod | rewind | eject | erase |\n  mark <n> | seek <n> | read [<blksize> [<numblocks]] | write [<blocksize>]\n");}
 
 #define arg1 (arg[0])  /* for backward compatibility, sigh */
 static int arg[4];  /* the argument for the command, sigh. */
