@@ -22,20 +22,20 @@
 .\"
 .TH scsieject 1 scsieject1.0
 .SH NAME
-scsieject \- control SCSI tape devices 
+scsieject \- control SCSI tape devices
 .SH SYNOPSIS
 scsieject [-f <scsi-generic-device>] commands
 .SH DESCRIPTION
-The 
+The
 .B scsieject
 command controls SCSI devices in a platform-independent
-manner. As long as 'mtx' works on the platform, so does 'scsieject'. 
+manner. As long as 'mtx' works on the platform, so does 'scsieject'.
 .SH OPTIONS
 The first argument, given following
 .B -f
 , is the SCSI generic device corresponding to your tape drive.
 Consult your operating system's documentation for more information (for
-example, under Linux these are generally /dev/sg0 through /dev/sg15, 
+example, under Linux these are generally /dev/sg0 through /dev/sgXX,
 under FreeBSD these are /dev/pass0 through /dev/passX. Under Solaris
 this is usually the same as your tape drive (Solaris has a SCSI passthrough
 ioctl). You can set the STAPE or TAPE environment variable rather
@@ -44,22 +44,22 @@ than use -f.
 .SH COMMANDS
 .TP 10
 .B load
-Load the medium into the drive.  When this command is issued to a CD/DVD drive 
+Load the medium into the drive.  When this command is issued to a CD/DVD drive
 and the tray is extended the tray will be retracted if the drive is capable of it.
 
 .TP 10
 .B unload
-Unload the medium from the drive (also known as eject).  When this command is issued 
+Unload the medium from the drive (also known as eject).  When this command is issued
 to a CD/DVD drive or a tape drive the media will be ejected if the device supports it.
 
 .TP 10
 .B start
-Start the device.  Some devices require a start command after a media changer has 
+Start the device.  Some devices require a start command after a media changer has
 loaded new media into the device.
 
 .TP 10
 .B stop
-Stop the device.  Some devices require a stop command prior to unloading the medium 
+Stop the device.  Some devices require a stop command prior to unloading the medium
 from the device when using a media changer.
 
 .TP 10
@@ -71,46 +71,41 @@ Lock the device.  Locks the device so that the medium cannot be removed manually
 Unlock the device.  Unlocks the device so that the medium can be removed manually.
 
 .SH AUTHORS
-This program was written by Robert Nelson <robertnelson@users.sourceforge.net> 
-based on the scsitape program written by Eric Lee Green <eric@badtux.org>. 
+This program was written by Robert Nelson <robertnelson@users.sourceforge.net>
+based on the scsitape program written by Eric Lee Green <eric@badtux.org>.
 Major portions of the 'mtxl.c' library used herein were written by
-Leonard Zubkoff. 
+Leonard Zubkoff.
 .P
 
 .SH HINTS
-Under Linux, 
-.B cat /proc/scsi/scsi
-will tell you what SCSI devices you have.
-You can then refer to them as 
-.B /dev/sga,
-.B /dev/sgb, 
-etc. by the order they
-are reported.
+Under Linux,
+.B lsscsi \-\-generic
+will tell you what SCSI devices you have and their device names.
 .P
-Under FreeBSD, 
+Under FreeBSD,
 .B camcontrol devlist
 will tell you what SCSI devices you
-have, along with which 
+have, along with which
 .B pass
 device controls them.
 .P
 Under Solaris 7 and 8,
 .B /usr/sbin/devfsadm -C
 will clean up your /devices directory. Then
-.B find /devices -name 'st@*' -print 
+.B find /devices -name 'st@*' -print
 will return a list of all tape drives. /dev on Solaris is apparently only
-of historical interest. 
+of historical interest.
 
 .SH BUGS AND LIMITATIONS
 There are no known bugs or limitations.
 
 .SH AVAILABILITY
-This version of 
+This version of
 .B scsieject
-is currently being maintained by Robert Nelson <robertnelson@users.sourceforge.net> 
-as part of the 'mtx' suite of programs. The 'mtx' home page is 
-http://mtx.sourceforge.net and the actual code is currently available there and via 
-SVN from http://sourceforge.net/projects/mtx. 
+is currently being maintained by Robert Nelson <robertnelson@users.sourceforge.net>
+as part of the 'mtx' suite of programs. The 'mtx' home page is
+http://mtx.sourceforge.net and the actual code is currently available there and via
+SVN from http://sourceforge.net/projects/mtx.
 
 .SH SEE ALSO
 .BR loaderinfo (1), tapeinfo (1), mtx (1)

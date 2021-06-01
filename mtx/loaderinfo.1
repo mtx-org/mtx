@@ -27,63 +27,65 @@ loaderinfo \- report SCSI tape device info
 .SH SYNOPSIS
 loaderinfo -f <scsi-generic-device>
 .SH DESCRIPTION
-The 
+The
 .B loaderinfo
 command reads various information from SCSI tape loaders. Its intended
 use is for high-level programs that are trying to decide what the
-capabilities of a device are. 
+capabilities of a device are.
 .P
 The following are printed:
 .TP 10
 .B  Element Address Assignment Page:
 This tells how many elements are in the loader, and what their raw
-hardware addresses are. 
+hardware addresses are.
 
 .TP 10
 .B Transport Geometry Descriptor Page:
 Will display whether media is invertible or not (usable with some
 optical jukeboxes for detirmining whether to "flip" media after writing
-to the first side). 
+to the first side).
 
-.TP 10 
+.TP 10
 .B Device Capabilities Page
 Currently will only display whether we can transfer between slots (i.e.
-whether 'mtx transfer' works). 
+whether 'mtx transfer' works).
 
 .TP 10
 .B Inquiry Page
 Aside from the normal inquiry info, will also print out whether we have
 a bar code reader (for loaders that support the Exabyte extension for
-reporting presense of said reader). 
+reporting presense of said reader).
 
 
 .SH OPTIONS
 The first argument, given following
 .B -f
-, is the SCSI generic device corresponding to your tape loader. 
+, is the SCSI generic device corresponding to your tape loader.
 Consult your operating system's documentation for more information (for
-example, under Linux these are generally start at /dev/sg0 
+example, under Linux these are generally start at /dev/sg0
 under FreeBSD these start at /dev/pass0).
 .P
 Under FreeBSD, 'camcontrol devlist' will tell you what SCSI devices you
 have, along with which 'pass' device controls them. Under Linux,
-"cat /proc/scsi/scsi" will tell you what SCSI devices you have. Under
-Solaris 8, 
+the command
+.B lsscsi \-\-generic
+will tell you what SCSI devices you have.
+Under Solaris 8,
 .B find /devices -name '*changer*'
 will display the device names for your attached changers. Make sure
-to configure your 'sgen' driver first. 
+to configure your 'sgen' driver first.
 
 .SH BUGS AND LIMITATIONS
 .P
 This program has only been tested on Linux with a limited number of
-loaders (Ecrix Autopack, Exabyte 220). 
+loaders (Ecrix Autopack, Exabyte 220, IBM TS3100).
 .P
 .SH AVAILABILITY
 .B loaderinfo
-is currently being maintained by Robert Nelson <robertnelson@users.sourceforge.net> 
-as part of the 'mtx' suite of programs. The 'mtx' home page is 
-http://mtx.sourceforge.net and the actual code is currently available there and via 
-SVN from http://sourceforge.net/projects/mtx. 
+is currently being maintained by Robert Nelson <robertnelson@users.sourceforge.net>
+as part of the 'mtx' suite of programs. The 'mtx' home page is
+http://mtx.sourceforge.net and the actual code is currently available there and via
+SVN from http://sourceforge.net/projects/mtx.
 
 .SH SEE ALSO
 .BR mt (1), tapeinfo (1), mtx (1)
