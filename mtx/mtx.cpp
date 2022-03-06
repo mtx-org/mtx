@@ -226,7 +226,14 @@ static void do_Position(void)
 	}
 
 	src = ElementStatus->StorageElementAddress[driveno];
+
+	fprintf(stdout, "Moving Element to position %d...", arg1);
+	fflush(stdout);
+
 	Position(src);
+
+	fprintf(stdout,"done\n");
+	fflush(stdout);
 }
 
 
@@ -480,44 +487,50 @@ static void ReportInquiry(void)
 	free(Inquiry);		/* well, we're about to exit, but ... */
 }
 
+static void print_VolumeTag(unsigned char *taglabel)
+{
+	for(int i=0;i<BARCODE_LENGTH;++i)if(taglabel[i]!=' ')printf("%c",taglabel[i]);
+}
+
 static void Status(void)
 {
 	int StorageElementNumber;
 	int TransferElementNumber;
 
-	printf( "  Storage Changer %s:%d Drives, %d Slots ( %d Import/Export )\n",
+	printf( "  Storage Changer %s: %d Drives, %d Slots ( %d Import/Export )\n",
 			device,
 			ElementStatus->DataTransferElementCount,
 			ElementStatus->StorageElementCount,
 			ElementStatus->ImportExportCount);
 
-
 	for (TransferElementNumber = 0; 
-		 TransferElementNumber < ElementStatus->DataTransferElementCount;
-		 TransferElementNumber++)
+		TransferElementNumber < ElementStatus->DataTransferElementCount;
+		TransferElementNumber++)
 	{
 		
-		printf("Data Transfer Element %d:", TransferElementNumber);
+		printf("Data Transfer Element %02d: ", TransferElementNumber);
 		if (ElementStatus->DataTransferElementFull[TransferElementNumber])
 		{
-			if (ElementStatus->DataTransferElementSourceStorageElementNumber[TransferElementNumber] > -1)
-			{
-				printf("Full (Storage Element %d Loaded)",
-						ElementStatus->DataTransferElementSourceStorageElementNumber[TransferElementNumber]+1);
-			}
-			else
-			{
-				printf("Full (Unknown Storage Element Loaded)");
-			}
-
 			if (ElementStatus->DataTransferPrimaryVolumeTag[TransferElementNumber][0])
 			{
-				printf(":VolumeTag = %s", ElementStatus->DataTransferPrimaryVolumeTag[TransferElementNumber]);
+				printf(" Full: VolumeTag=");
+				print_VolumeTag(ElementStatus->DataTransferPrimaryVolumeTag[TransferElementNumber]);
 			}
 
 			if (ElementStatus->DataTransferAlternateVolumeTag[TransferElementNumber][0])
 			{
-				printf(":AlternateVolumeTag = %s", ElementStatus->DataTransferAlternateVolumeTag[TransferElementNumber]); 
+				printf(" Full: VolumeTag=");
+				print_VolumeTag(ElementStatus->DataTransferAlternateVolumeTag[TransferElementNumber]);
+			}
+
+			if (ElementStatus->DataTransferElementSourceStorageElementNumber[TransferElementNumber] > -1)
+			{
+				printf(": (Storage Element %d Loaded)",
+					ElementStatus->DataTransferElementSourceStorageElementNumber[TransferElementNumber]+1);
+			}
+			else
+			{
+				printf(": (Unknown Storage Element Loaded)");
 			}
 			putchar('\n');
 		}
@@ -531,19 +544,23 @@ static void Status(void)
 		 StorageElementNumber < ElementStatus->StorageElementCount;
 		 StorageElementNumber++)
 	{
-		printf(	"      Storage Element %d%s:%s", StorageElementNumber + 1,
-				(ElementStatus->StorageElementIsImportExport[StorageElementNumber]) ? " IMPORT/EXPORT" : "",
-				(ElementStatus->StorageElementFull[StorageElementNumber] ? "Full " : "Empty"));
+		printf(	"      Storage Element %02d: %5s", StorageElementNumber + 1,
+				(ElementStatus->StorageElementFull[StorageElementNumber] ? "Full" : "Empty"));
 
 		if (ElementStatus->PrimaryVolumeTag[StorageElementNumber][0])
 		{
-			printf(":VolumeTag=%s", ElementStatus->PrimaryVolumeTag[StorageElementNumber]);
+			printf(": VolumeTag=");
+			print_VolumeTag(ElementStatus->PrimaryVolumeTag[StorageElementNumber]);
 		}
 
 		if (ElementStatus->AlternateVolumeTag[StorageElementNumber][0])
 		{
-			printf(":AlternateVolumeTag=%s", ElementStatus->AlternateVolumeTag[StorageElementNumber]);
+			printf(": AlternateVolumeTag=");
+			print_VolumeTag(ElementStatus->AlternateVolumeTag[StorageElementNumber]);
 		}
+
+		printf("%s", (ElementStatus->StorageElementIsImportExport[StorageElementNumber]) ? ": IMPORT/EXPORT" : "");
+
 		putchar('\n');
 	}
 
@@ -683,7 +700,14 @@ static void Transfer(void)
 
 	src = ElementStatus->StorageElementAddress[arg1 - 1];
 	dest = ElementStatus->StorageElementAddress[arg2 - 1];
-	Move(src,dest);
+
+	fprintf(stdout, "Transfering media from Storage Element %d to %d...", arg1, arg2);
+	fflush(stdout);
+
+	Move(src,dest);  /* load it into the particular slot, if possible! */
+
+	fprintf(stdout,"done\n");
+	fflush(stdout);
 }
 
 /****************************************************************
