@@ -485,13 +485,8 @@ int main(int argc, char **argv)
 	char *filename;
 
 	argv0=argv[0];
-	if (argc != 3)
-	{
-		fprintf(stderr,"argc=%d",argc);
-		usage();
-	}
 
-	if (strcmp(argv[1],"-f")!=0)
+	if (argc != 3 || strcmp(argv[1],"-f")!=0)
 	{
 		usage();
 	}
