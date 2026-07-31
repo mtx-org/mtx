@@ -395,6 +395,11 @@ static struct tapealert_struct *RequestTapeAlert(DEVICE_TYPE fd, RequestSense_T 
 		return result;
 	}
 
+	/* Clamp to actual buffer data area — device may report total
+	 * available data exceeding our allocation length. */
+	if (tapealert_len > TAPEALERT_SIZE - 4)
+		tapealert_len = TAPEALERT_SIZE - 4;
+
 	/* okay, now allocate data and move the buffer over there: */
 	result->length = MAX_TAPE_ALERT;
 	result->data = xzmalloc(MAX_TAPE_ALERT); /* alloc & zero. */
@@ -404,12 +409,23 @@ static struct tapealert_struct *RequestTapeAlert(DEVICE_TYPE fd, RequestSense_T 
 
 	while (i < tapealert_len)
 	{
+		int remaining;
+		int param_len;
+
+		remaining = tapealert_len - i;
+		if (remaining < 4)
+			break;
+
+		param_len = walkptr[3];
+		if (param_len < 1 || (4 + param_len) > remaining)
+			break;
+
 		result_idx=(((int)walkptr[0])<<8) + walkptr[1]; /* the parameter #. */
 		if (result_idx > 0 && result_idx < MAX_TAPE_ALERT)
 		{
 			if (walkptr[4])
 			{
-				result->data[result_idx] = 1; 
+				result->data[result_idx] = 1;
 			}
 			else
 			{
@@ -425,8 +441,8 @@ static struct tapealert_struct *RequestTapeAlert(DEVICE_TYPE fd, RequestSense_T 
 			FatalError("Invalid tapealert page: %d\n",result_idx);
 		}
 
-		i = i + 4 + walkptr[3]; /* length byte! */
-		walkptr = walkptr + 4 + walkptr[3]; /* next! */
+		i = i + 4 + param_len;
+		walkptr = walkptr + 4 + param_len;
 	}
 	return result;
 }
@@ -569,10 +585,24 @@ static unsigned char
 	}
 
 	/* First skip past any header.... */
+	if (4 + input_buffer[3] >= 255)
+	{
+		free(input_buffer);
+		return NULL;
+	}
+
 	tmp = input_buffer + 4 + input_buffer[3];
 
 	/* now find out real length of page... */
 	pagelen = tmp[1] + 2;
+	if (pagelen > 255 - 4 - input_buffer[3])
+		pagelen = 255 - 4 - input_buffer[3];
+	if (pagelen < 2)
+	{
+		free(input_buffer);
+		return NULL;
+	}
+
 	retval = xmalloc(pagelen);
 
 	/* and copy our data to the new page. */
@@ -608,6 +638,12 @@ static void ReportCompressionPage(DEVICE_TYPE fd)
 		return;  /* sorry! */
 	}
 
+	if (compression_page[1] + 2 < 12)
+	{
+		free(compression_page);
+		return;
+	}
+
 	/* Okay, we now have the compression page. Now print stuff from it: */
 	printf("DataCompEnabled: %s\n", (compression_page[2] & DCE_MASK)? "yes" : "no");
 	printf("DataCompCapable: %s\n", (compression_page[2] & DCC_MASK)? "yes" : "no");
@@ -637,6 +673,12 @@ static void ReportConfigPage(DEVICE_TYPE fd)
 	config_page = mode_sense(fd, 0x10, 16, &RequestSense);
 	if (!config_page)
 		return;
+
+	if (config_page[1] + 2 < 14)
+	{
+		free(config_page);
+		return;
+	}
 
 	/* Now to print the stuff: */
 	printf("ActivePartition: %d\n", config_page[3]);
@@ -675,45 +717,58 @@ static void ReportPartitionPage(DEVICE_TYPE fd)
 	if (!partition_page)
 		return;
 
-	/* Okay, now we have either old format or new format: */
-	num_parts = partition_page[3];
-	max_parts = partition_page[2];
-
-	printf("NumPartitions: %d\n", num_parts);
-	printf("MaxPartitions: %d\n", max_parts);
-
-	if (!num_parts)
 	{
-		/* if no additional partitions, then ... */ 
-		free(partition_page);
-		return;
-	}
+		int pagelen = partition_page[1] + 2;
 
-	/* we know we have at least one partition if we got here. Check the
-	 * page size field. If it is 8 or below, then we are the old format....
-	 */
-
-#ifdef DEBUG_PARTITION
-	fprintf(stderr,"partition_page[1]=%d\n",partition_page[1]);
-	fflush(stderr);
-#endif
-	if (partition_page[1]==8)
-	{
-		/* old-style! */
-		printf("Partition1: %d\n",(partition_page[8]<<8)+partition_page[9]);
-	}
-	else
-	{
-		/* new-style! */
-		for (i=0;i<=max_parts;i++)
+		if (pagelen < 4)
 		{
+			free(partition_page);
+			return;
+		}
+
+		/* Okay, now we have either old format or new format: */
+		num_parts = partition_page[3];
+		max_parts = partition_page[2];
+
+		printf("NumPartitions: %d\n", num_parts);
+		printf("MaxPartitions: %d\n", max_parts);
+
+		if (!num_parts)
+		{
+			/* if no additional partitions, then ... */
+			free(partition_page);
+			return;
+		}
+
+		/* we know we have at least one partition if we got here. Check the
+		 * page size field. If it is 8 or below, then we are the old format....
+		 */
+
 #ifdef DEBUG_PARTITION
-			fprintf(stderr,"partition%d:[%d]%d [%d]%d\n", i, 8 + i * 2,
-			partition_page[8+i*2]<<8, 9+i*2,partition_page[9 + i * 2]);
-			fflush(stderr);
+		fprintf(stderr,"partition_page[1]=%d\n",partition_page[1]);
+		fflush(stderr);
 #endif
-			printf("Partition%d: %d\n", i,
-					(partition_page[8 + i * 2] << 8) + partition_page[9 + i * 2]);
+		if (partition_page[1]==8)
+		{
+			/* old-style! */
+			if (pagelen >= 10)
+				printf("Partition1: %d\n",(partition_page[8]<<8)+partition_page[9]);
+		}
+		else
+		{
+			/* new-style! */
+			for (i=0;i<=max_parts;i++)
+			{
+				if (9 + i * 2 >= pagelen)
+					break;
+#ifdef DEBUG_PARTITION
+				fprintf(stderr,"partition%d:[%d]%d [%d]%d\n", i, 8 + i * 2,
+				partition_page[8+i*2]<<8, 9+i*2,partition_page[9 + i * 2]);
+				fflush(stderr);
+#endif
+				printf("Partition%d: %d\n", i,
+						(partition_page[8 + i * 2] << 8) + partition_page[9 + i * 2]);
+			}
 		}
 	}
 	free(partition_page);
@@ -752,6 +807,8 @@ unsigned char buffer[WILD_SER_SIZE]; /* just wildly overestimate serial# length!
 	the sernum field, and bytes 4 onward are the serial #. */
 
 	lim = (int)buffer[3];
+	if (lim > WILD_SER_SIZE - 4)
+		lim = WILD_SER_SIZE - 4;
 	bufptr = (char *)&(buffer[4]);
 
 	printf("SerialNumber: '");
@@ -918,6 +975,8 @@ static void ReportIDLun(DEVICE_TYPE fd)
 	scsi_id_t *scsi_id;
 
 	scsi_id = SCSI_GetIDLun(fd);
+	if (!scsi_id)
+		return;
 	printf("SCSI ID: %d\nSCSI LUN: %d\n", scsi_id->id, scsi_id->lun);
 }
 
