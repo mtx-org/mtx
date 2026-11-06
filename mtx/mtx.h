@@ -535,8 +535,8 @@ TransportElementDescriptor_T;
 
 
 /* Now for element status data; */
-
-typedef unsigned char barcode[37];
+#define BARCODE_LENGTH 37
+typedef unsigned char barcode[BARCODE_LENGTH];
 
 typedef struct ElementStatus {
 

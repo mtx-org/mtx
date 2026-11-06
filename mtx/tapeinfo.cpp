@@ -930,16 +930,11 @@ int main(int argc, char **argv)
 
 	argv0=argv[0];
 
-	if (argc != 3)
+	if (argc != 3 || strcmp(argv[1],"-f")!=0)
 	{
-		fprintf(stderr,"argc=%d",argc);
 		usage();
 	}
 
-	if (strcmp(argv[1],"-f")!=0)
-	{
-		usage();
-	}
 	filename=argv[2];
 
 	fd=SCSI_OpenDevice(filename);
