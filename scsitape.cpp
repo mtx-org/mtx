@@ -115,7 +115,7 @@ char *argv0;
 /* open_device() -- set the 'fh' variable.... */
 void open_device(void)
 {
-	if (MediumChangerFD != -1)
+	if (MediumChangerFD != (DEVICE_TYPE) -1)
 	{
 		SCSI_CloseDevice("Unknown",MediumChangerFD);  /* close it, sigh...  new device now! */
 	}
@@ -145,7 +145,7 @@ int execute_command(struct command_table_struct *command)
 	/* if the device is not already open, then open it from the 
 	* environment.
 	*/
-	if (MediumChangerFD != -1)
+	if (MediumChangerFD != (DEVICE_TYPE) -1)
 	{
 		/* try to get it from STAPE or TAPE environment variable... */
 		device = getenv("STAPE");
