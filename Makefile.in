@@ -36,6 +36,7 @@ INSTALL_DIR = $(INSTALL) -m 755 -d
 prefix		= @prefix@
 exec_prefix	= @exec_prefix@
 sbindir		= @sbindir@
+datarootdir	= @datarootdir@
 mandir		= @mandir@
 srcdir		= @srcdir@
 
