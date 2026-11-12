@@ -1,0 +1,373 @@
+CHANGES, mtx 1.3.12
+- Incorporate debian packaging
+- Remove strip of binaries
+- Remove unsupported nsmhack from list of binaries built by default
+- Add support for building outside of source tree
+- Update copyrights
+- Fix typo in mtx.1 man page
+- Clear outstanding UNIT ATTENTION state at start
+
+CHANGES, mtx 1.3.11
+- loaderinfo: Print RequestSense information if an operation fails.
+- loaderinfo: Print all information from the Device Configuration Page.
+- mtx: Fix problems with a lot of loaders determining the number of elements.
+- mtx: Implement Previous command.
+- mtx: Fix bugs in Last command.
+- scsieject: New tool that handles start/stop, load/unload.
+- tapeinfo: Fix inconsistencies in output.
+- Fix timeout handling on Linux.
+- Merge in fixes from the Debian and FreeBSD distributions.
+
+CHANGES, mtx 1.3.10
+- Add support for Microsoft Windows.
+- Add support for Sony VGP-XL1B(2) Media Changer.
+  Thanks to Will (nodenet at hotmail dot com)
+- Add build support for Microsoft Windows using MinGW native and Linux
+  cross-compile.
+- Add build support for Microsoft Windows using Microsoft Visual Studio 2005.
+- Add support for building on x86_64.
+- Add more debugging information.
+- Eliminate compiler warnings.
+
+CHANGES, mtx 1.3.9
+- Cleaned up scsi_linux.c a little to eliminate around 40 lines of code. 
+- Change to using SG_IO ioctl rather than write-read interface. This
+  should make us a little safer, as well as (on 2.6.x) letting us issue SCSI 
+  commands to regular block devices as well as to /dev/sgXX devices. 
+  WARNING: Can cause the system to *CRASH* if the SCSI device is in use, due 
+  to brokenness inside the Linux kernel! It's always preferable to use the 
+  /dev/sgXX device, which has specialness in its buffer handling that bypasses
+  some of the brokenness elsewhere in the SCSI subsystem.
+- Check SG version before using SG_IO interface, so that if we're run on a
+  Linux 2.2 system and we were compiled on Linux 2.4 or above, 
+- If a tape is in the drive, make tapeinfo print out its partition info. Seems
+  to work on my DAT drive, anyhow (shrug). 
+- Minor cleanups in mtxl.c (other cleanups necessary in tapeinfo and etc.). 
+
+CHANGES, mtx 1.3.8
+- Forgot about 8 bytes for header
+- Handle pedantic loader whose firmware writer spends too much time
+  parsing phrases in the SCSI spec and not enough time in the
+  real world. 
+
+CHANGES, mtx 1.3.6
+- The You Gotta Be F'ing Kidding Release (see rant on mailing list)
+- Added AIX support with http://fz.eryx.net/aix/ GSC driver, courtesy
+  of Steve Heck. 
+- Make __WEIRD_CHAR_SUPPRESS the default to stop barcode garbling
+- Fix core dump on invalid inputs in mtx.c
+- Add retry with bigger ALLOCATION_LENGTH if 
+  BYTE_COUNT_OF_REPORT_AVAILABLE is > than our original estimate. (see rant
+  on mailing list). 
+- Shut up the low-level SCSI sg_read and sg_write routines, which were poofting
+  all over the place on innocuous things like no EAAP. 
+
+CHANGES, mtx 1.3.5
+- The I-Need-A-Job Release (see http://badtux.org) :-}
+- Change Makefile so that it works w/systems whose 'install' program
+  accepts only one argument. That's it. 
+- Uncomment the Exabyte hack in the drive parsing code so that it works
+  with ATL loaders again. 
+- Add hack for ATL stacked loaders to keep them from reporting ghost slots
+
+CHANGES, mtx 1.3.4
+- Forward-ported the ATL/Exabyte patches from mtx 1.2
+- Added progress indicator to 'tapeinfo' for DAT drives. (PLEASE TEST)
+- Purged a few more estinc.com out of the documentation, point to bru.com.
+
+CHANGES, mtx 1.3.3
+- Reversed James' long descriptor patch until can figure out what's wrong with
+  it.
+- Fixed some debug declarations, courtesy of Kevin Wang. 
+- Point COMPATIBILITY file at mtx.sourceforge.net.
+
+CHANGES, mtx 1.3.2
+- Merged Makefile changes from mtx-1.2 code
+- Changes from James Dugal to get all info for newer loaders, fix debugging
+
+CHANGES, mtx 1.3.1
+- add an Exchange command
+
+CHANGES, mtx 1.3.0
+- New Linux SCSI subsystem interface for 2.4 kernels, ripped boldly 
+  from sgtools by Doug Gilbert
+- mtx 'next' now skips blank slots, courtesy of Christopher McCrory
+- mtx 'unload' now prints an error message telling you that you need to
+  eject the tape in the drive prior to unloading it, under certain
+  conditions. 
+- Started work on 'nsmhack' for controlling NSM jukeboxes. 
+- copy_barcode was off by one. 
+- 'position to element' command now added, courtesy of Mahlon Stacy
+
+CHANGES, mtx 1.2.15:
+- Some Solaris fixes, courtesy of Matt Ward
+- Fix URL in .spec file
+
+CHANGES, mtx 1.2.14:
+- Fix so it'll work if 0 is result of SCSI open (e.g., in cron jobs on Linux)
+- Move changelog to end of .spec file for easier reading
+- Added a bit of text to beginning of COMPATIBILITY file
+
+CHANGES, mtx 1.2.13:
+- Fixed some autoloader bugs w/autoloaders that don't report an arm. 
+- Fixed barcode backoff.
+- Added "nobarcode" option
+- Increased timeout for 'mtx inventory' to 30 minutes
+  (note: may increase this even more if needed, please let me know!)
+- Shortened timeout for 'mtx inquiry' to 30 seconds
+- tapeinfo now prints SCSI ID/LUN info if available (only on Linux at the
+  moment, sigh). 
+- update documentation w/new email addresses, updated compile directions,
+  various fixes. 
+
+CHANGES, mtx 1.2.12:
+- Fix FreeBSD compile bugs
+- Fix SGI compile bugs
+- Add HP/UX port (I hope!), courtesy of William Smith. 
+- Re-wrote ReadElementStatus to make work for %!@# brain dead firmware that
+  reports non-existent drives (I hope!). Also has side-effect of now working
+  with multiple-arm libraries (though it only sees first arm!).
+- Cleaned up all -Wall messages.
+- Cleaned up Linux Sparc, installs loaderinfo.1, courtesy of Matt Dainty.
+- tapeinfo now reports status of CheckUnitReady.  
+- tapeinfo no longer puts out Block Position if CheckUnitReady says 'no'.
+- tapeinfo now puts out Density Code and Medium Type/Not Loaded (modification
+    of patches sent in by Bob Rahe)
+
+CHANGES, mtx 1.2.11:
+- Added a GNU autoconf Makefile.in (still provide a Makefile for your use)
+  *WARNING* autoconf is not yet working on all supported OS's! You may need
+  to do the old-fashioned 'edit Makefile' bit!
+- Changed mtx.h and mtxl.c to include and define various things based upon
+  what features autoconf detected (e.g., if 'camlib.h', use FreeBSD-style
+  'cam', if 'scsi/sg.h' use Linux-style 'sg', etc.). If I ever port to a
+  Unix that has same SCSI interface as one of the existing ports, autoconf
+  will handle it without me having to add another set of #if's or #ifdefs. 
+- Went ahead and tossed mtxctl into contrib.
+- In 'tapeinfo', skip \0 characters in serial numbers (some use \0 
+  terminator, some do not, skip it if this one does). 
+- in 'tapeinfo', dump out the block position and (if at BOP) the "BOP: Yes"
+  flag. Also dump out other info such as block limits. 
+- Put file 'sparc-patch1' contributed by Chaskiel M Grundman, and applied
+  it (sigh)
+- Added tapeinfo.py to 'contrib' directory
+- Updated mtx.py in 'contrib' directory
+- Created 'loaderinfo' program to report some misc. info about loaders.
+- Created 'scsitape' program so that I don't have to keep messing with
+  #@$%@! tape ioctls on the various Unixes that I'm porting tape software
+  to.  (But see the warnings!).
+- Applied the Solaris patch to the read_element_status command (sigh). 
+- Added timeout adjustment to the SCSI subsystem. 
+- WARNING: DIGITAL UNIX AND VMS ARE PROBABLY IRREPERABLY BROKEN, due to the
+  timeout changes to the SCSI subsystem. If anybody wishes to fix them,
+  feel free to send me patches. 
+- added contrib program "mtx-changer" (an Amanda tape changer script for
+  ?Solaris? that uses mtx rather than stc)
+- Jiggered Linux SCSI module for smarter error conditions handling (there are
+  some error conditions that are normal for READ of tape drives).
+- Added contrib program "config_sgen_solaris.sh" which should ease 
+  setting up the 'sgen' driver on Solaris 8 (still no easy Solaris 7 or
+  below config). 
+
+CHANGES, mtx 1.2.10:
+- Added FAQ and COMPATIBILITY (feel free to send me patches to these files!)
+- Added LICENSE
+- Added serial number to 'tapeinfo' output. 
+- Fixed stupid syntax error in mtx.c (compiled with gcc, not with others!)
+- Fixed spec file for building rpms (maybe).
+- Added an 'erase' command (undocumented) for use on Linux for doing
+  short erases on tapes (the Linux device driver defaults to a long erase). 
+- Made mtx inventory return an error code if the inventory
+  fails, so that we can wait for inventory to be completed at system
+  startup for libraries that auto-inventory (sigh). 
+
+CHANGES, mtx 1.2.9:
+- Added an 'eject' command that, if directed to a tape drive, will eject the
+  tape, and for some autoloaders, if directed to LUN 1, will eject the entire
+  magazine.
+- Fixed the 'transfer' command to be 1 based rather than 0 based (sigh)
+- Now properly reports bar code for the tape that's in the tape drive.
+- Added some miscellaneous Python and Perl scripts to 'contrib'. Thanks
+  to Frank Samuelson for the Perl scripts. 
+
+CHANGES, mtx 1.2.8:
+- Spec file has been changed to use the "portable" patch supplied by Red
+  Hat so it should work on Linux Alpha and Linux SPARC too... maybe...
+- Now will accept 4-byte element status for most element types, despite fact
+  that these don't comply with SCSI standards :-(. This should make many
+  older changers work, including HP optical changers. 
+- Fixed PeripheralDeviceType table, courtesy of Rob Turk.
+- Now looks for CHANGER environment variable if a device is not specified
+  on the command line. If can't find CHANGER, then tries TAPE environment
+  variable.
+- Properly sets TransportElementAddress in the CDB for the MOVE MEDIUM command
+  with what was discovered via the READ_ELEMENT_STATUS command, rather
+  than setting them to zero (SCSI spec says that zero should be the default
+  arm, but at least one changer out there didn't like it). 
+- Added a '--version' command (sigh). 
+- Added an 'inventory' command for Breece Hill libraries that don't 
+  automatically do an inventory at powerup. 
+
+CHANGES, mtx 1.2.7:
+- Fixed problem w/single drive Exabyte 220 reporting element status data for
+  both drives (sigh).
+- some general cleanup in the barcode fallback code (what a cruft!). Discovered
+  that ADIC DAT AUTOCHANGER does not work w/mtx because it produces
+  gibberish (will apparently only produce one element status page per request).
+- Fixed the RPM .spec file to have updated file locations, doc locations.
+- Fixed MoveMedium to say 'Output' for direction, to make it work with
+  Solaris 8     
+- Some changes to the Solaris low-level module to report more errors (though
+   it still doesn't work as well as the Linux low-level module). Should now
+   work properly with Solaris 2.6/7/8. (Solaris changes courtesy of Richard
+   Fish of Enhanced Software Technologies). 
+
+CHANGES, mtx 1.2.6:
+- Fixed 'eepos' stuff to use | rather than || (whoops!)
+- Accept a 4-byte element descriptor for the robot arm for certain older
+  autochangers. 
+
+CHANGES, mtx 1.2.5: 
+- Added 'noattach' command. If on command line prior to other commands, forces
+  them to use the regular SCSI changer API rather than the _ATTACHED API,
+  no matter what the _ATTACHED bit in the Inquiry page said. 
+- Created 'tapeinfo' program.
+
+CHANGES, mtx 1.2.4:
+- Major overhaul of element guts to dynamically allocate the arrays
+  using the result of a MODE_SENSE on the Element Address Assignment
+  Page. If mtx 1.2.3 works for you and mtx 1.2.4 does NOT work for you, 
+  please un-comment the '#define DEBUG_MODE_SENSE' in file 'mtxl.c' and 
+  EMAIL me the results.
+
+CHANGES, mtx 1.2.3:
+- Fixed the source storage element number stuff (again, sigh)
+- Because of above fix, 'next' etc. ought to work right again.
+
+CHANGES, mtx 1.2.2:
+- Fixed that it was saying everything was an Import/Export element (oops!)
+- Properly update the Import/Export element count.
+
+CHANGES, mtx 1.2.1:
+- Now explicitly output that a Storage element is in fact an Import/Export
+  element.
+- Added 'transfer' command to transfer between two Storage elements (so that
+  you can get a tape to an Import/Export element.
+- Added 'eepos' command for controlling tray retraction on the Breecehill
+  import/export trays. (Works with "load" and "unload" commands too, though
+  that is not documented on "mtx -h"). 
+
+CHANGES, mtx 1.2.0:
+- Re-numbered now that Leonard has asked me to take over maintenance of the
+  'mtx' program.
+- Temporarily treat Import/Export elements the same as Storage elements. Need
+  to fix this eventually so that the GUI knows what kind of element we're
+  talking about. 
+- Removed quotes from the source element # to make it easier to parse
+  from Perl or Python (just do a split on spaces). 
+- Added sample program, 'mam2debug', showing how to use mtxl library for
+  your own programs (this happens to dump the Exabyte Mammoth 2's internal 
+  debug buffer to a file, using the Mammoth2-specific SCSI commands to do so).
+
+CHANGES, mtxl 1.4.8:
+- Whoops, report logical rather than physical when I have to scan for
+  open slots :-).
+
+CHANGES, mtxl 1.4.7:
+- Update comment to reflect mtxl 1.4.6 stuff :-).
+- Fix the part of the code that scans for open slots as sources for media.
+
+CHANGES, mtxl 1.4.6:
+- Don't use _ATTACHED interface if it reports itself as a Medium Changer!
+
+CHANGES, mtxl 1.4.5:
+- Changed "whoops" compile error on Linux (teach me to release w/o testing on
+  the most popular platform!)
+- Changed declarations to remove compile-time warnings.
+
+CHANGES, mtxl 1.4.4:
+- Added support for FreeBSD. (uses pass device, NOT native FreeBSD ch device).
+- Change all 'int' DeviceFD to DEVICE_TYPE DeviceFD. Note that SGI and FreeBSD
+  use a struct * to access the CAM SCSI layer, rather than a file fd. 
+- Fixed goof where I'd hard-wired max # of elements to 127 for testing
+  purposes (it should be sum of MAX_STORAGE_ELEMENTS + MAX_TRANSFER_ELEMENTS 
+  + MAX_TRANSPORT_ELEMENTS from mtx.h -- change those if you need more
+  elements, bearing in mind that the code for ReadElementStatus in
+  mtxl.c maxes out at 255 elements unless you fix that too).
+- Cleaned some cruft out of the MOVE_MEDIUM code.
+- Must have GNU Make to process Makefile. In reality, I don't know of
+  any machine where we voluntarily use the native 'make' command, because
+  a) there's a half dozen native 'make' all with their own perverted
+  syntaxes, and b) most of them are brain dead beyond belief. 
+
+CHANGES, mtxl 1.4.3:
+- Do an INQUIRY prior to doing a MOVE_MEDIUM or READ_ELEMENT_STATUS so that I
+  can detect the MChanger bit and use MOVE_MEDIUM_ATTACHED or
+  READ_ELEMENT_STATUS_ATTACHED commands instead. 
+- Successfully tested with dual drives!
+- first, next, last now working 
+- Created a man page
+- Created a 'make install', edit Makefile to alter destinations. 
+
+CHANGES, mtxl 1.4.2:
+- Found the problem with the DAT changer! It was burping on the 
+  'bar code' bit... so I intercept that sense key, re-issue w/out the
+  'bar code' bit, and success!
+- Added a 'TODO' file...
+
+CHANGES, mtxl 1.4.1:
+- Added 'invert' qualifier to 'load' and 'unload' commands to invert
+  the media (for HP optical jukeboxes). Type './mtx' by itself to 
+  see the syntax.
+- Figured out why my code wasn't properly detecting errors --
+  turns out the 'sg' device can return ok
+  status even when there is sense data to be reported!
+- Still to fix: *still* isn't working right with my Seagate 
+  6-tape DDS-4 DAT changer... also need to put the
+  second drive into the Exabyte 220 to make sure the dual-drive stuff 
+  works properly (!). 
+
+CHANGES, mtxl 1.4:
+- Have now tested the barcode (volume tag) stuff. It works! (Well, there was
+an index-by-one problem that I had to squash, but after that...)
+- Changed to use SCSI Generic device API on Linux rather than 
+SCSI_IOCTL_SEND_COMMAND API, which cut things off at 4095 bytes on i386
+Linux. 
+- Added a bunch of debugging output that needs to be ripped out :-(. 
+Make sure you remove the -DDEBUG from the Makefile, and probably
+   -DLONG_PRINT_REQUEST_SENSE too (unless you LIKE sense results that make
+sense!) 
+- Still have annoying bug on Linux of only reading 1st 16 bytes of sense
+data. Alas, this appears to be a problem in the Linux 2.2 kernel, not in
+anything that we're doing :-(. Hmm... cdrecord has the same problem, Mr.
+Schilling says he's been saying it's a problem since 1997. Sigh. 
+- Still need to test the dual-drive stuff!
+
+CHANGES, mtxl 1.3:
+- Hacked in the barcode (volume tag) stuff. NEED SOMEONE TO TEST
+WHETHER IT WORKS!
+- started issuing redundant initial READ_ELEMENT_STATUS with Allocation Length
+of 8 in order to get a BYTE_COUNT_OF_REPORT_AVAILABLE in order to calculate a
+better Allocation Length for the "real" READ_ELEMENT_STATUS. Trying to send a
+query to a small 6-tape changer with an Allocation Length suited for a 
+200-element tape library was resulting in some errors and lockups on the
+part of the tape changer device.
+- first, last, next, previous are STILL broken. Sorry :-(. 
+
+CHANGES, mtxl 1.2:
+
+- Changed many output messages to make them more easily parsed by
+scripts written in awk/perl/python
+- Extracted out a library of SCSI tape library routines usable by "C"
+programs (must be GPL'ed). Extensive re-arranging of code.
+- Added support for multiple drives.
+- Started adding support for tape changers that use the "MCHangr" 
+bit rather than a separate ID or LUN.
+- Increased limits so we could deal with LARGE tape libraries.
+- Started adding support for barcode readers in said tape libraries
+- broke first, last, next, previous. Sorry :-(. 
+- Added ability to chain commands on command line. Thus could say 'mtx -f
+/dev/sg4 unload 4 0 load 7 0' to unload a tape from drive 0 and load the
+tape in slot 7 into drive 0. 
+
+

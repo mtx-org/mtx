@@ -1,0 +1,45 @@
+BUILDING FOR MICROSOFT WINDOWS
+==============================
+
+You can perform the build using either MinGW or Microsoft Visual Studio 2005.
+
+	Microsoft Visual Studio 2005
+	----------------------------
+	
+	Open the solution in msvc/mtx.sln.
+	
+	Select the Build / Build Solution menu item.
+	
+	
+	MinGW with GCC
+	--------------
+	
+	You must be using at least version 2.16.91 of binutils.
+	
+	To generate the initial configure script, this only needs to be 
+	done once.
+	
+	./configure --host=mingw32
+	make
+	
+CHANGES FROM UNIX
+=================
+
+The only difference is in the naming of devices.  On Linux the changer is 
+accessed using /dev/sg<N>, on Windows you use Changer<N>.
+
+On Linux the tape drive is referenced using /dev/nst<N>, on Windows you use Tape<N>.
+
+There is one exception, in the case where there isn't a driver loaded for the device.  
+This is usually only the case on Windows 2000 or if the Windows XP or Windows Server 
+2003 system supplied driver has been disabled.
+
+In the case where there is no driver loaded you can access the device directly 
+through the SCSI driver using the following notation:
+
+	<port>:<bus>:<target>:<lun>
+	
+		Port is the adapter number
+		Bus is the SCSI bus number relative to the adapter
+		Target is the SCSI device's target ID
+		LUN is the SCSI device's logical unit number

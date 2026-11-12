@@ -1,0 +1,72 @@
+.\" tapeinfo.1  Document copyright 2000 Eric Lee Green
+.\"  Program Copyright 2000 Eric Lee Green <eric@badtux.org>
+.\"  Copyright 2007-2008 by Robert Nelson <robertn@the-nelsons.org>
+.\"
+.\" This is free documentation; you can redistribute it and/or
+.\" modify it under the terms of the GNU General Public License as
+.\" published by the Free Software Foundation; either version 2 of
+.\" the License, or (at your option) any later version.
+.\"
+.\" The GNU General Public License's references to "object code"
+.\" and "executables" are to be interpreted as the output of any
+.\" document formatting or typesetting system, including
+.\" intermediate and printed output.
+.\"
+.\" This manual is distributed in the hope that it will be useful,
+.\" but WITHOUT ANY WARRANTY; without even the implied warranty of
+.\" MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+.\" GNU General Public License for more details.
+.\"
+.\" You should have received a copy of the GNU General Public
+.\" License along with this manual; if not, write to the Free
+.\" Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139,
+.\" USA.
+.\"
+.TH TAPEINFO 1 TAPEINFO1.0
+.SH NAME
+tapeinfo \- report SCSI tape device info
+.SH SYNOPSIS
+tapeinfo -f <scsi-generic-device>
+.SH DESCRIPTION
+The 
+.B tapeinfo
+command reads various information from SCSI tape drives that is not
+generally available via most vendors' tape drivers. It issues raw
+commands directly to the tape drive, using either the operating system's
+SCSI generic device ( e.g. /dev/sg0 on Linux, /dev/pass0 on FreeBSD) or
+the raw SCSI I/O ioctl on a tape device on some operating systems. 
+.P
+One good time to use 'tapeinfo' is immediately after a tape i/o operation has
+failed. On tape drives that support HP's 'tapealert' API, 'tapeinfo' will
+report a more exact description of what went wrong. 
+.P
+Do be aware that 'tapeinfo' is not a substitute for your operating system's
+own 'mt' or similar tape driver control program. It is intended to supplement,
+not replace, programs like 'mt' that access your operating system's tape
+driver in order to report or set information. 
+.SH OPTIONS
+The first argument, given following
+.B -f
+, is the SCSI generic device corresponding to your tape drive.
+Consult your operating system's documentation for more information (for
+example, under Linux these are generally start at /dev/sg0 
+under FreeBSD these start at /dev/pass0).
+.P
+Under FreeBSD, 'camcontrol devlist' will tell you what SCSI devices you
+have, along with which 'pass' device controls them. Under Linux,
+"cat /proc/scsi/scsi" will tell you what SCSI devices you have.
+
+.SH BUGS AND LIMITATIONS
+.P
+This program has only been tested on Linux with a limited number of
+tape drives (HP DDS4, Seagate AIT). 
+.P
+.SH AVAILABILITY
+.B tapeinfo
+is currently being maintained by Robert Nelson <robertnelson@users.sourceforge.net> 
+as part of the 'mtx' suite of programs. The 'mtx' home page is 
+http://mtx.sourceforge.net and the actual code is currently available there and via 
+SVN from http://sourceforge.net/projects/mtx. 
+
+.SH SEE ALSO
+.BR mt (1), mtx (1), scsitape (1), scsieject (1), loaderinfo (1)

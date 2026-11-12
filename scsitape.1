@@ -1,0 +1,179 @@
+.\" scsitape.1  Document Copyright 2001 Eric Lee Green
+.\" Copyright 2007-2008 by Robert Nelson <robertn@the-nelsons.org>
+.\"
+.\" This is free documentation; you can redistribute it and/or
+.\" modify it under the terms of the GNU General Public License as
+.\" published by the Free Software Foundation; either version 2 of
+.\" the License, or (at your option) any later version.
+.\"
+.\" The GNU General Public License's references to "object code"
+.\" and "executables" are to be interpreted as the output of any
+.\" document formatting or typesetting system, including
+.\" intermediate and printed output.
+.\"
+.\" This manual is distributed in the hope that it will be useful,
+.\" but WITHOUT ANY WARRANTY; without even the implied warranty of
+.\" MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+.\" GNU General Public License for more details.
+.\"
+.\" You should have received a copy of the GNU General Public
+.\" License along with this manual; if not, write to the Free
+.\" Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139,
+.\" USA.
+.\"
+.TH SCSITAPE 1 SCSITAPE1.0
+.SH NAME
+scsitape \- control SCSI tape devices 
+.SH SYNOPSIS
+scsitape [-f <scsi-generic-device>] commands
+.SH DESCRIPTION
+The 
+.B scsitape
+command controls SCSI tape drives in a platform-independent
+manner. As long as 'mtx' works on the platform, so does 'scsitape'. 
+.P
+Note that 'scsitape' and your OS's native tape driver may stomp on each
+other. In particular, if you use 'setblk' and your OS's native tape
+driver has a different notion of the block size, you may get evil results.
+It is recommended to use 'scsitape' only for software where you've written
+your own low-level READ and WRITE routines that use the SCSI command set
+to directly talk to tape drives (i.e., you do not use the OS's native tape
+driver at all). 
+.SH OPTIONS
+The first argument, given following
+.B -f
+, is the SCSI generic device corresponding to your tape drive.
+Consult your operating system's documentation for more information (for
+example, under Linux these are generally /dev/sg0 through /dev/sg15, 
+under FreeBSD these are /dev/pass0 through /dev/passX. Under Solaris
+this is usually the same as your tape drive (Solaris has a SCSI passthrough
+ioctl). You can set the STAPE or TAPE environment variable rather
+than use -f.
+.P
+.SH COMMANDS
+.TP 10
+.B setblk <n>
+Set the tape drive's SCSI block size to <n> bytes. (NOTE: if you are
+using your OS's native tape driver, THIS IS EVIL!). 
+
+.TP 10
+.B fsf <n>
+Go forward by <n> tapemarks.
+.TP 10
+.B bsf <n>
+Go to immediately previous the <n>th previous tapemark. (WARNING: This
+probably doesn't do what you expect -- e.g. if you are immediately
+after a tapemark and type 'bfs 1', it moves to immediately *before*
+that tape mark, for a sum total of zero effective movement!).
+.TP 10
+.B eod
+Go to end of data. 
+.TP 10
+.B rewind
+Rewind the tape drive.
+.TP 10
+.B eject
+Eject the tape currently in the drive.
+.TP 10
+.B erase
+Does a *short* erase (warning: does NOT work on all drives!). 
+.TP 10
+.B mark <n>
+ write <n> filemarks ( 'mark 0' flushes the drive's buffers ). 
+.TP 10
+.B seek <n>
+Seek to a logical position <n> that was reported by a previous 'tapeinfo'
+command. 
+.TP 10
+.B write <blocksize> 
+write blocks from stdin to the tape. Chunk the data into <blocksize>-sized
+chunks. *DOES NOT WRITE OUT A TAPEMARK!* (you will need to use a 
+subsequent
+.B mark 1
+command to write out a tape mark). 
+.TP 10
+.B read [<blocksize>] [ <#blocks/#bytes> ]
+read blocks from the tape, write them to stdout. If we are in variable
+block mode, <blocksize> should be zero (note: The maximum block size
+we currently support in variable block mode is 128K, MAX_READ_SIZE will
+need to be turned into a settable variable to allow bigger reads). If
+<blocksize> is ommitted, we assume that we're in variable block mode, and
+that we are going to read from tape until we hit a tapemark or end of
+partition or end of tape. 
+
+
+.SH AUTHORS
+This program was written by Eric Lee Green <eric@badtux.org>. 
+Major portions of the 'mtxl.c' library used herein were written by
+Leonard Zubkoff. 
+.P
+
+The SCSI read and write routines are based upon those that Richard
+Fish wrote for Enhanced Software Technology's BRU 16.1 product,
+substantially modified to work in our particular environment (in
+particular, all the variable block stuff is new since BRU only does
+fixed block reads and writes, and the BRU code uses bitmasks rather
+than bitfields for the various flags and such in return values, as
+well as the BRU code having a different SCSI API and having variable
+names considerably shorter than the rather sesquipedalian 'mtx'
+identifiers). As required by 'mtxl.c', these routines are licensed
+under the GNU General Public License.
+
+.SH HINTS
+Under Linux, 
+.B cat /proc/scsi/scsi
+will tell you what SCSI devices you have.
+You can then refer to them as 
+.B /dev/sga,
+.B /dev/sgb, 
+etc. by the order they
+are reported.
+.P
+Under FreeBSD, 
+.B camcontrol devlist
+will tell you what SCSI devices you
+have, along with which 
+.B pass
+device controls them.
+.P
+Under Solaris 7 and 8,
+.B /usr/sbin/devfsadm -C
+will clean up your /devices directory. Then
+.B find /devices -name 'st@*' -print 
+will return a list of all tape drives. /dev on Solaris is apparently only
+of historical interest. 
+
+.SH BUGS AND LIMITATIONS
+
+for
+.B scsitape read 0 <n>
+where  you are doing variable-block-size reads and wish for <n> bytes,
+it instead reads one and exactly one block from tape and prints that
+(no matter what its size). Use 'dd' on the output of scsitape if you
+want finer control. 
+.P
+.B scsitape read 0
+attempts reads of MAX_READ_SIZE, which is currently 128K. If blocks on tape
+are larger than 128K, only the first 128K will be read -- the remainder
+will be silently dumped in the toilet.
+.P
+This program does not interact well (or at all :-) with your OS's
+native tape driver.  You will likely see weird things happen if you
+attempt to intermingle scsitape commands with native tape driver
+operations. Note that BRU 16.1 for Solaris (and possibly others, but
+Solaris I know about) will have a 'scsi' keyword to bypass the 
+native tape driver and write via direct uscsi commands, so if you use
+\'scsitape\' to bypass the flaws of the native Solaris driver, you can use
+BRU 16.1 to write your actual tape archives. (Assuming that BRU 16.1
+has been released at the time that you read this). 
+
+.SH AVAILABILITY
+This version of 
+.B scsitape
+is currently being maintained by Robert Nelson <robertnelson@users.sourceforge.net> 
+as part of the 'mtx' suite of programs. The 'mtx' home page is 
+http://mtx.sourceforge.net and the actual code is currently available there and via 
+SVN from http://sourceforge.net/projects/mtx. 
+
+.SH SEE ALSO
+.BR loaderinfo (1), tapeinfo (1), mtx (1)

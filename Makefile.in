@@ -1,0 +1,176 @@
+# WARNING -- THIS HAS BEEN RE-WRITTEN TO USE GNU MAKE. DO NOT
+# TRY TO PROCESS THIS WITH A NORMAL MAKE! (FREEBSD GUYS, THIS MEANS
+# USE GMAKE, NOT REGULAR BSD MAKE!)
+#
+# Valid targets:
+#  linux86 freebsd86 solarissparc sgi dec vms 
+#
+# Makefile changes by Lars Kellogg-Stedman for better integration with
+# GNU Autoconf. 
+
+# Version # for 'make dist'...
+VERSION=1.3.12
+
+BINS = mtx@EXEEXT@ tapeinfo@EXEEXT@ loaderinfo@EXEEXT@ scsitape@EXEEXT@ scsieject@EXEEXT@
+EXTRA_BINS = nsmhack@EXEEXT@
+DBGS := $(BINS:%@EXEEXT@=%.dbg)
+MAN = mtx.1 tapeinfo.1 loaderinfo.1 scsitape.1 scsieject.1
+MAN_HTML := $(MAN:%.1=%.html)
+MAN_TXT := $(MAN:%.1=%.txt)
+
+TARGET	= @TARGET@
+CPU	= @CPU@
+CC	= @CC@
+INSTALL	= @INSTALL@
+
+CFLAGS		= @CFLAGS@
+CPPFLAGS	= @CPPFLAGS@ -DVERSION="\"$(VERSION)\"" -I$(srcdir) -I.
+LDFLAGS		= @LDFLAGS@
+LIBS		= @LIBS@
+USE_OBJCOPY	= @USE_OBJCOPY@
+
+INSTALL_DOC = $(INSTALL) -m 644
+INSTALL_BIN = $(INSTALL) -m 755
+INSTALL_DIR = $(INSTALL) -m 755 -d
+
+prefix		= @prefix@
+exec_prefix	= @exec_prefix@
+sbindir		= @sbindir@
+mandir		= @mandir@
+srcdir		= @srcdir@
+
+VPATH = $(srcdir)
+
+#
+# Linux on x86...
+#
+ifeq ($(TARGET),linux)
+CFLAGS += -Wall
+CPPFLAGS	+= -DLONG_PRINT_REQUEST_SENSE=1
+endif
+
+ifeq ($(TARGET),mingw)
+CFLAGS += -Wall
+CPPFLAGS	+= -DLONG_PRINT_REQUEST_SENSE=1
+endif
+
+#
+# FreeBSD
+#
+ifeq ($(TARGET),freebsd86)
+CPPFLAGS	+= -DLONG_PRINT_REQUEST_SENSE=1
+LIBS		+= -lcam
+endif
+
+ifeq ($(TARGET),hpux)
+CFLAGS += -O -D_HPUX_SOURCE -D __hpux__ 
+endif
+
+#
+# Solaris/SPARC
+#
+ifeq ($(TARGET),solarissparc)
+CFLAGS		+= -O6
+endif
+
+#
+# SGI IRIX
+#
+ifeq ($(TARGET),sgi)
+CFLAGS		+= -O6
+LIBS		+= -lds
+endif
+
+#
+# Digital Unix
+#
+ifeq ($(TARGET),dec)
+CFLAGS		+= -O
+endif
+
+#
+# OpenVMS (see vms/000readme)
+#
+ifeq ($(TARGET),vms)
+See vms/000readme for information.
+endif
+
+%.dbg : %@EXEEXT@
+ifeq ($(USE_OBJCOPY),yes)
+	objcopy --only-keep-debug $< $@
+	objcopy --strip-debug $<
+	objcopy --add-gnu-debuglink=$@ $<
+else
+	strip $< -o $@
+endif
+
+all:	$(BINS)
+
+dbgs: $(DBGS)
+
+install: $(BINS)
+	$(INSTALL_DIR) $(sbindir)
+	for file in $(BINS); do \
+	$(INSTALL_BIN) "$$file" $(sbindir) ; \
+	done	
+	$(INSTALL_DIR) $(mandir) $(mandir)/man1
+	for file in mtx.1 tapeinfo.1 scsitape.1 scsieject.1 loaderinfo.1 ; do \
+	$(INSTALL_DOC) "$$file"  $(mandir)/man1 ; \
+	done
+
+clean:
+	rm -f *.o *~ mtx-*.zip
+	rm -f $(BINS)
+	rm -f $(DBGS)
+	rm -f $(MAN_HTML)
+	rm -f $(MAN_TXT)
+	rm -f mam2debug@EXEEXT@ mam2debug2@EXEEXT@
+	rm -rf autom4te.cache
+
+distclean: clean
+	rm -f Makefile config.h config.log config.cache config.status
+
+dist: distclean
+	./makedist $(VERSION)	
+
+loaderinfo@EXEEXT@: loaderinfo.o mtxl.o mtxl.h mtx.h $(EXTRA)
+	$(CC) $(LDFLAGS) -o loaderinfo@EXEEXT@ loaderinfo.o mtxl.o $(EXTRA) $(LIBS)
+
+nsmhack@EXEEXT@: nsmhack.o mtxl.o $(EXTRA)
+	$(CC) $(LDFLAGS) -o nsmhack@EXEEXT@ nsmhack.o mtxl.o $(EXTRA) $(LIBS)
+
+mtx@EXEEXT@: mtx.o mtxl.o mtxl.h mtx.h $(EXTRA)
+	$(CC) $(LDFLAGS) -o mtx@EXEEXT@ mtx.o mtxl.o $(EXTRA) $(LIBS)
+
+mam2debug@EXEEXT@: mtxl.o mam2debug.o mtx.h $(EXTRA)	
+	$(CC) $(LDFLAGS) -o mam2debug@EXEEXT@ mtxl.o mam2debug.o $(EXTRA) $(LIBS)
+
+tapeinfo@EXEEXT@: tapeinfo.o mtxl.o mtx.h mtxl.h $(EXTRA)
+	$(CC) $(LDFLAGS) -o tapeinfo@EXEEXT@ tapeinfo.o mtxl.o $(EXTRA) $(LIBS)
+
+mam2debug2@EXEEXT@: mtxl.o mam2debug2.o mtx.h $(EXTRA)
+	$(CC) $(LDFLAGS) -o mam2debug2@EXEEXT@ mtxl.o mam2debug2.o $(EXTRA) $(LIBS)
+
+scsitape@EXEEXT@: scsitape.o mtxl.o mtxl.h mtx.h $(EXTRA)
+	$(CC) $(LDFLAGS) -o scsitape@EXEEXT@ scsitape.o mtxl.o $(EXTRA) $(LIBS)
+
+scsitape.o: scsitape.c mtx.h mtxl.h
+
+scsieject@EXEEXT@: scsieject.o mtxl.o mtxl.h mtx.h $(EXTRA)
+	$(CC) $(LDFLAGS) -o scsieject@EXEEXT@ scsieject.o mtxl.o $(EXTRA) $(LIBS)
+
+scsieject.o: scsieject.c mtx.h mtxl.h
+
+loaderinfo.o: loaderinfo.c mtx.h mtxl.h
+
+tapeinfo.o: tapeinfo.c mtx.h mtxl.h
+
+mam2debug.o: mam2debug.c mtx.h mtxl.h
+
+mam2debug2.o: mam2debug2.c mtx.h mtxl.h
+
+mtx.o: mtx.c mtx.h mtxl.h
+
+mtxl.o: mtxl.c mtx.h mtxl.h scsi_linux.c scsi_win32.c
+
+nsmhack.o: nsmhack.c mtxl.h mtx.h

@@ -1,0 +1,257 @@
+.\" mtx.1  Document copyright 2000 Eric Lee Green
+.\"  Program Copyright 1996, 1997 Leonard Zubkoff
+.\"  Copyright 2007-2008 by Robert Nelson <robertn@the-nelsons.org>
+.\"  Extensive changes 2000 by Eric Lee Green <eric@badtux.org>
+.\"
+.\" This is free documentation; you can redistribute it and/or
+.\" modify it under the terms of the GNU General Public License as
+.\" published by the Free Software Foundation; either version 2 of
+.\" the License, or (at your option) any later version.
+.\"
+.\" The GNU General Public License's references to "object code"
+.\" and "executables" are to be interpreted as the output of any
+.\" document formatting or typesetting system, including
+.\" intermediate and printed output.
+.\"
+.\" This manual is distributed in the hope that it will be useful,
+.\" but WITHOUT ANY WARRANTY; without even the implied warranty of
+.\" MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+.\" GNU General Public License for more details.
+.\"
+.\" You should have received a copy of the GNU General Public
+.\" License along with this manual; if not, write to the Free
+.\" Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139,
+.\" USA.
+.\"
+.TH MTX 1 MTX1.3
+.SH NAME
+mtx \- control SCSI media changer devices 
+.SH SYNOPSIS
+mtx [-f <scsi-generic-device>] [nobarcode] [invert] [noattach] command [ command ... ]
+.SH DESCRIPTION
+The 
+.B mtx
+command controls single or multi-drive SCSI media changers such as
+tape changers, autoloaders, tape libraries, or optical media jukeboxes.
+It can also be used with media changers that use the 'ATTACHED' API, 
+presuming that they properly report the MChanger bit as required
+by the SCSI T-10 SMC specification. 
+.SH OPTIONS
+The first argument, given following
+.B -f
+, is the SCSI generic device corresponding to your media changer. 
+Consult your operating system's documentation for more information (for
+example, under Linux these are generally /dev/sg0 through /dev/sg15, 
+under FreeBSD these are /dev/pass0 through /dev/passX,
+under SunOS it may be a file under /dev/rdsk).  
+.P
+The 'invert' option will invert (flip) the media (for optical jukeboxes that
+allow such) before inserting it into the drive or returning it to the
+storage slot. 
+.P
+The 'noattach' option forces the regular media changer API even if the
+media changer incorrectly reported that it uses the 'ATTACHED' API. 
+.P
+The 'nobarcode' option forces the loader to not request barcodes even if
+the loader is capable of reporting them.  
+.P
+Following these options there may follow
+one or more robotics control
+commands. Note that the 'invert' and 'noattach'
+options apply to ALL of robotics control
+commands.
+
+.SH COMMANDS
+.TP 10
+.B --version
+Report the mtx version number (e.g. mtx 1.2.8) and exit. 
+
+.TP 10
+.B inquiry
+Report the product type (Medium Changer, Tape Drive, etc.), Vendor ID,
+Product ID, Revision, and whether this uses the Attached Changer API
+(some tape drives use this rather than reporting a Medium Changer on a
+separate LUN or SCSI address). 
+.TP 10
+.B noattach
+Make further commands use the regular media changer API rather than the 
+_ATTACHED API, no matter what the "Attached" bit said in the Inquiry info.
+Needed with some brain-dead changers that report Attached bit but don't respond
+to _ATTACHED API. 
+.TP 10
+.B inventory
+Makes the robot arm go and check what elements are in the slots. This
+is needed for a few libraries like the Breece Hill ones that do not 
+automatically check the tape inventory at system startup. 
+.TP 10
+.B status
+Reports how many drives and storage elements are contained in the
+device. For each drive, reports whether it has media loaded in it, and
+if so, from which storage slot the media originated. For each storage
+slot, reports whether it is empty or full, and if the media changer
+has a bar code, MIC reader, or some other way of uniquely identifying
+media without loading it into a drive, this reports the volume tag
+and/or alternate volume tag for each piece of media.
+For historical reasons drives are numbered from 0 and storage slots are
+numbered from 1. 
+.TP 10
+.B load <slotnum> [ <drivenum> ]
+Load media from slot <slotnum> into drive <drivenum>. Drive 0 is assumed
+if the drive number is omitted.
+.TP 10
+.B unload [<slotnum>] [ <drivenum> ]
+Unloads media from drive <drivenum> into slot <slotnum>. If <drivenum> is
+omitted, defaults to drive 0 (as do all commands).
+If <slotnum> is omitted, defaults to the slot
+that the drive was loaded from. Note that there's currently no way to
+say 'unload drive 1's media to the slot it came from', other than to 
+explicitly use that slot number as the destination.
+.TP 10
+.B [eepos <operation>] transfer <slotnum> <slotnum>
+Transfers media from one slot to another, assuming that your mechanism is
+capable of doing so. Usually used to move media to/from an import/export
+port. 'eepos' is used to extend/retract the import/export 
+tray on certain mid-range to high end tape libraries (if, e.g., the tray was
+slot 32, you might say say 'eepos 1 transfer 32 32' to extend the tray). 
+Valid values for eepos <operation>
+are 0 (do nothing to the import/export tray), 1, and 2 (what 1 and 2 do varies
+depending upon the library, consult your library's SCSI-level 
+documentation). 
+.TP 10
+.B [eepos <operation>] [invert] [invert2] exchange <slotnum> <slotnum> [<slotnum>]
+Move medium from the first slot to the second slot, placing the medium
+currently in the second slot either back into the first slot or into the
+optional third slot. 
+
+.TP 10
+.B first  [<drivenum>]
+Loads drive <drivenum> from the first slot in the media
+changer. Unloads the drive if there is already media in it (note: you
+may need to eject the tape using your OS's tape control commands
+first).  Note that this command may not be what you want on large
+tape libraries -- e.g. on Exabyte 220, the first slot is usually a
+cleaning tape. If <drivenum> is omitted, defaults to first drive.
+
+.TP 10
+.B last [<drivenum>]
+Loads drive <drivenum> from the last slot in the media changer. Unloads
+the drive if there is already a tape in it. (Note: you may need to eject
+the tape using your OS's tape control commands first).  
+.TP 10
+.B next [<drivenum>]
+Unloads the drive and loads the next tape in sequence. If the drive was
+empty, loads the first tape into the drive.
+.TP 10
+.B position <slotnum>
+Positions the robot at a specific slot. Needed by some changers to
+move to and open the import/export, or mailbox, slot.
+
+.SH AUTHORS
+The original 'mtx' program was written by Leonard Zubkoff and extensively
+revised for large multi-drive libraries with bar code readers 
+by Eric Lee Green <eric@badtux.org>. See 'mtx.c' for other contributors. 
+.SH BUGS AND LIMITATIONS
+.P
+You may need to do a 'mt offline' on the tape drive to eject the tape
+before you can issue the 'mtx unload' command. The Exabyte EZ-17 and 220
+in particular will happily sit there snapping the robot arm's claws around
+thin air trying to grab a tape that's not there. 
+.P
+For some Linux distributions, you may need to re-compile the kernel to
+scan SCSI LUN's in order to detect the media changer. Check /proc/scsi/scsi
+to see what's going on. 
+.P
+If you try to unload a tape to its 'source' slot, and said slot is
+full, it will instead put the tape into the first empty
+slot. Unfortunately the list of empty slots is not updated between
+commands on the command line, so if you try to unload another drive to
+a full 'source' slot during the same invocation of 'mtx', it will try
+to unload to the same (no longer empty) slot and will urp with a SCSI
+error.
+.P
+
+This program reads the Mode Sense Element Address Assignment Page
+(SCSI) and requests data on all available elements. For larger
+libraries (more than a couple dozen elements)
+this sets a big Allocation_Size in the SCSI command block for the
+REQUEST_ELEMENT_STATUS command in order to be able to read the entire
+result of a big tape library. Some operating systems may not be able
+to handle this. Versions of Linux earlier than 2.2.6, in particular,
+may fail this request due to inability to find contiguous pages of
+memory for the SCSI transfer (later versions of Linux 'sg' device do
+scatter-gather so that this should no longer be a problem).
+.P
+The 
+.B eepos
+command remains in effect for all further commands on a command
+line. Thus you might want to follow 
+.B eepos 1 transfer 32 32
+with 
+.B eepos 0
+as
+the next command (which clears the 
+.B eepos
+bits). 
+.P
+Need a better name for 'eepos' command! ('eepos' is the name of the bit
+field in the actual low-level SCSI command, and has nothing to do with what
+it does). 
+.P
+
+This program has only been tested on Linux with a limited number of
+tape loaders (a dual-drive Exabyte 220 tape library, with bar-code
+reader and 21 slots, an Exabyte EZ-17 7-slot autoloader, and a Seagate
+DDS-4 autochanger with 6 slots). It may not work on other operating systems 
+with larger libraries,
+due to the big SCSI request size. 
+Please see the projecdt page http://sourceforge.net/projects/mtx for information 
+on reporting bugs, requesting features and the mailing list for peer support.
+.SH HINTS
+Under Linux, 
+.B cat /proc/scsi/scsi
+will tell you what SCSI devices you have.
+You can then refer to them as 
+.B /dev/sga,
+.B /dev/sgb, 
+etc. by the order they
+are reported.
+.P
+Under FreeBSD, 
+.B camcontrol devlist
+will tell you what SCSI devices you
+have, along with which 
+.B pass
+device controls them.
+.P
+Under Solaris, set up your 'sgen' driver so that it'll look for
+tape changers (see /kernel/drv/sgen.conf and the sgen man page), type
+.B touch /reconfigure
+then reboot. You can find your changer in /devices by typing
+.B /usr/sbin/devfsadm -C
+to clean out no-longer-extant entries in your /devices directory, then
+.B find /devices -name \e\(**changer -print
+to find the device name. Set the symbolic link 
+.B /dev/changer 
+to point
+to that device name (if it is not doing so already).
+.P
+With BRU, set your mount and unmount commands as described on the BRU
+web site at http://www.bru.com to move to the next tape when backing up
+or restoring. With GNU 
+.B tar,
+see 
+.B mtx.doc
+for an example of how to use
+.B tar
+and 
+.B mtx
+to make multi-tape backups. 
+
+.SH AVAILABILITY
+This version of 
+.B mtx
+is currently being maintained by Robert Nelson <robertnelson@users.sourceforge.net> .
+The 'mtx' home page is http://mtx.sourceforge.net and the actual code is currently available
+there and via SVN from http://sourceforge.net/projects/mtx. 
+.SH SEE ALSO
+.BR mt (1), loaderinfo (1), tapeinfo (1), scsitape (1), scsieject (1)

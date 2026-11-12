@@ -1,0 +1,16 @@
+Source: mtx
+Section: admin
+Priority: extra
+Maintainer: Robert Nelson <robertn@the-nelsons.org>
+Build-Depends: debhelper (>= 4), libcam-dev [kfreebsd-i386 kfreebsd-amd64], autotools-dev
+Standards-Version: 3.7.3
+
+Package: mtx
+Architecture: any
+Depends: ${shlibs:Depends}
+Description: controls tape autochangers
+ MTX can be used to manipulate tape auto-changers, also known as "jukeboxes",
+ such that backup software can make use of the multiple tape capabilities of
+ the auto-changer.  In particular, this is necessary glue for using a backup
+ system like Amanda with a DDS auto-changer like the HP Surestore 12000e.
+

@@ -1,0 +1,116 @@
+.\" scsieject.1  Document Copyright 2007-2008 Robert Nelson
+.\"
+.\" This is free documentation; you can redistribute it and/or
+.\" modify it under the terms of the GNU General Public License as
+.\" published by the Free Software Foundation; either version 2 of
+.\" the License, or (at your option) any later version.
+.\"
+.\" The GNU General Public License's references to "object code"
+.\" and "executables" are to be interpreted as the output of any
+.\" document formatting or typesetting system, including
+.\" intermediate and printed output.
+.\"
+.\" This manual is distributed in the hope that it will be useful,
+.\" but WITHOUT ANY WARRANTY; without even the implied warranty of
+.\" MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+.\" GNU General Public License for more details.
+.\"
+.\" You should have received a copy of the GNU General Public
+.\" License along with this manual; if not, write to the Free
+.\" Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139,
+.\" USA.
+.\"
+.TH scsieject 1 scsieject1.0
+.SH NAME
+scsieject \- control SCSI tape devices 
+.SH SYNOPSIS
+scsieject [-f <scsi-generic-device>] commands
+.SH DESCRIPTION
+The 
+.B scsieject
+command controls SCSI devices in a platform-independent
+manner. As long as 'mtx' works on the platform, so does 'scsieject'. 
+.SH OPTIONS
+The first argument, given following
+.B -f
+, is the SCSI generic device corresponding to your tape drive.
+Consult your operating system's documentation for more information (for
+example, under Linux these are generally /dev/sg0 through /dev/sg15, 
+under FreeBSD these are /dev/pass0 through /dev/passX. Under Solaris
+this is usually the same as your tape drive (Solaris has a SCSI passthrough
+ioctl). You can set the STAPE or TAPE environment variable rather
+than use -f.
+.P
+.SH COMMANDS
+.TP 10
+.B load
+Load the medium into the drive.  When this command is issued to a CD/DVD drive 
+and the tray is extended the tray will be retracted if the drive is capable of it.
+
+.TP 10
+.B unload
+Unload the medium from the drive (also known as eject).  When this command is issued 
+to a CD/DVD drive or a tape drive the media will be ejected if the device supports it.
+
+.TP 10
+.B start
+Start the device.  Some devices require a start command after a media changer has 
+loaded new media into the device.
+
+.TP 10
+.B stop
+Stop the device.  Some devices require a stop command prior to unloading the medium 
+from the device when using a media changer.
+
+.TP 10
+.B lock
+Lock the device.  Locks the device so that the medium cannot be removed manually.
+
+.TP 10
+.B unlock
+Unlock the device.  Unlocks the device so that the medium can be removed manually.
+
+.SH AUTHORS
+This program was written by Robert Nelson <robertnelson@users.sourceforge.net> 
+based on the scsitape program written by Eric Lee Green <eric@badtux.org>. 
+Major portions of the 'mtxl.c' library used herein were written by
+Leonard Zubkoff. 
+.P
+
+.SH HINTS
+Under Linux, 
+.B cat /proc/scsi/scsi
+will tell you what SCSI devices you have.
+You can then refer to them as 
+.B /dev/sga,
+.B /dev/sgb, 
+etc. by the order they
+are reported.
+.P
+Under FreeBSD, 
+.B camcontrol devlist
+will tell you what SCSI devices you
+have, along with which 
+.B pass
+device controls them.
+.P
+Under Solaris 7 and 8,
+.B /usr/sbin/devfsadm -C
+will clean up your /devices directory. Then
+.B find /devices -name 'st@*' -print 
+will return a list of all tape drives. /dev on Solaris is apparently only
+of historical interest. 
+
+.SH BUGS AND LIMITATIONS
+There are no known bugs or limitations.
+
+.SH AVAILABILITY
+This version of 
+.B scsieject
+is currently being maintained by Robert Nelson <robertnelson@users.sourceforge.net> 
+as part of the 'mtx' suite of programs. The 'mtx' home page is 
+http://mtx.sourceforge.net and the actual code is currently available there and via 
+SVN from http://sourceforge.net/projects/mtx. 
+
+.SH SEE ALSO
+.BR loaderinfo (1), tapeinfo (1), mtx (1)

@@ -1,0 +1,159 @@
+mtx (1.3.12-1) unstable; urgency=low
+
+  * Incorporate debian packaging into upsteam version
+  * Remove strip of binaries
+  * Remove unsupported nsmhack from list of binaries built by default
+  * Add support for building outside of source tree
+  * Update copyrights
+  * Fix typo in mtx.1 man page
+  * Clear outstanding UNIT ATTENTION state at start
+
+ -- Robert Nelson <robertn@the-nelsons.org>  Tue, 19 Aug 2008 09:04:00 +0000
+
+mtx (1.3.11-1) unstable; urgency=low
+
+  * new upstream version, closes: #425687, #425688
+  * don't let Makefile.in strip binaries, let dh_strip do it, closes: #437589
+
+ -- Bdale Garbee <bdale@gag.com>  Tue, 15 Apr 2008 14:34:32 -0600
+
+mtx (1.2.17rel-2) unstable; urgency=low
+
+  * update config.sub and config.guess in rules clean target using the
+    autotools-dev package, closes: #367467
+
+ -- Bdale Garbee <bdale@gag.com>  Sat, 19 Aug 2006 18:44:54 -0600
+
+mtx (1.2.17rel-1) unstable; urgency=low
+
+  * new upstream version
+
+ -- Bdale Garbee <bdale@gag.com>  Wed, 28 Jun 2006 23:57:44 -0400
+
+mtx (1.2.16rel-5) unstable; urgency=low
+
+  * add build-deps needed for GNU/kFreeBSD, closes: #367467
+  * update debhelper build dependency
+
+ -- Bdale Garbee <bdale@gag.com>  Wed, 28 Jun 2006 23:42:00 -0400
+
+mtx (1.2.16rel-4) unstable; urgency=medium
+
+  * revert SG_SCSI_DEFAULT_TIMEOUT to 5 minutes since at least the Sony
+    TLS-9000 takes more than a minute to load sometimes, closes: #229169
+  * remove 'previous' from command summary, since it's not actually 
+    implemented in the program, closes: #230041
+  * include bash_completion file from Jon Middleton, closes: #227456
+
+ -- Bdale Garbee <bdale@gag.com>  Sat, 14 Feb 2004 22:36:23 -0700
+
+mtx (1.2.16rel-3) unstable; urgency=low
+
+  * apply patch from Torsten Werner <twerner@debian.org> that elminates
+    hard-coding of the value of HZ, closes: #224147
+
+ -- Bdale Garbee <bdale@gag.com>  Tue, 16 Dec 2003 10:04:26 -0700
+
+mtx (1.2.16rel-2) unstable; urgency=low
+
+  * apply patch from R.A.Owen <rao3@leicester.ac.uk> that fixes the "staggered"
+    output from the status command on some changers, closes: #129910
+
+ -- Bdale Garbee <bdale@gag.com>  Tue,  9 Apr 2002 19:30:06 -0600
+
+mtx (1.2.16rel-1) unstable; urgency=low
+
+  * new upstream version, bug-fixing release, reportedly fixes timeout 
+    problem with some drives, closes: #113947
+
+ -- Bdale Garbee <bdale@gag.com>  Mon,  4 Mar 2002 01:27:48 -0700
+
+mtx (1.2.15-1) unstable; urgency=low
+
+  * new upstream source
+  * update standards version, rebuild rules file
+  * man pages all included now, mtx-changer and other pieces from contrib
+    provided as examples, though chg-mtx in the amanda package is probably
+    a better choice for use with amanda, closes: #113728
+  * apply diffs to correct "spelling errors" (actually hyphenation) in the
+    descriptions in the control file, closes: #125160
+
+ -- Bdale Garbee <bdale@gag.com>  Sun, 30 Dec 2001 21:28:46 -0700
+
+mtx (1.2.10-1) unstable; urgency=low
+
+  * new upstream source
+
+ -- Bdale Garbee <bdale@gag.com>  Mon, 11 Dec 2000 17:34:13 -0700
+
+mtx (1.0-10) frozen unstable; urgency=low
+
+  * deliver mtx.doc, lost when the package was made FHS compliant, 
+    closes: #56276  Target frozen since including the documentation
+    is worthwhile for potato, and there is no added risk.
+
+ -- Bdale Garbee <bdale@gag.com>  Wed,  9 Feb 2000 12:27:58 -0700
+
+mtx (1.0-9) unstable; urgency=low
+
+  * fix postinst/postrm scripts to be executable again
+
+ -- Bdale Garbee <bdale@gag.com>  Tue, 11 Jan 2000 23:00:17 -0700
+
+mtx (1.0-8) unstable; urgency=low
+
+  * update to latest standards revision, add Build-Depends
+  * fix all the lintian errors that aren't intentional, override the two
+    permissions warnings since they're precisely what is needed
+
+ -- Bdale Garbee <bdale@gag.com>  Fri,  7 Jan 2000 02:47:08 -0700
+
+mtx (1.0-7) unstable; urgency=low
+
+  * grab a local copy of scsi_ioctl.h from the 2.2.10 kernel source tree.  This
+    doesn't change often in any way we care about, and this is much simpler
+    than having to reference a live kernel tree somewhere...
+  * move to debhelper and CVS
+
+ -- Bdale Garbee <bdale@gag.com>  Sun, 20 Jun 1999 10:42:39 -0600
+
+mtx (1.0-6) unstable; urgency=low
+
+  * put mtx in group backup, setuid root, perms set so that only members of
+    group backup can run mtx.  This makes mtx compatible with amanda.
+
+ -- Bdale Garbee <bdale@gag.com>  Tue, 27 Jan 1998 15:06:13 -0700
+
+mtx (1.0-5) unstable; urgency=low
+
+  * explicit include path to find <scsi/scsi_ioctl.h> in the 
+    /usr/src/linux/include tree.  closes bug 16877
+
+ -- Bdale Garbee <bdale@gag.com>  Sun, 25 Jan 1998 23:02:46 -0700
+
+mtx (1.0-4) unstable; urgency=low
+
+  * actually install the mtx.doc file that's referenced in the man page /o\
+
+ -- Bdale Garbee <bdale@gag.com>  Sun, 21 Sep 1997 02:38:50 -0600
+
+mtx (1.0-3) unstable; urgency=low
+
+  * libc6
+
+ -- Bdale Garbee <bdale@gag.com>  Thu,  4 Sep 1997 02:56:39 -0600
+
+mtx (1.0-2) unstable; urgency=low
+
+  * Add an 'mtx-changer' wrapper script from the amanda-users mailing list
+    to make this more useful with Amanda.
+  * Hack mtx-changer to report 6 slots instead of 4, since I have an HP
+    SureStore 12000e.  Should make it configurable, someday.
+
+ -- Bdale Garbee <bdale@gag.com>  Sun, 10 Aug 1997 03:50:42 -0600
+
+mtx (1.0-1) unstable; urgency=low
+
+  * Initial Release.
+
+ -- Bdale Garbee <bdale@gag.com>  Sun, 10 Aug 1997 03:05:18 -0600

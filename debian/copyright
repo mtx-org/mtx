@@ -1,0 +1,15 @@
+This package was debianized by Bdale Garbee bdale@gag.com on
+Sun, 10 Aug 1997 03:05:18 -0600.
+
+mtx was downloaded from http://mtx.sourceforge.net/
+
+Copyright:
+
+  Copyright 1997, 1998 Leonard Zubkoff <lnz@dandelion.com>
+  Changes copyright 2000, 2001 Eric Green <eric@badtux.org>
+  Changes copyright 2007-2008 by Robert Nelson <robertn@the-nelsons.org>
+
+  GPL, version 2
+
+On Debian GNU/Linux systems, the complete text of the GNU General
+Public License can be found in `/usr/share/common-licenses/GPL'.
