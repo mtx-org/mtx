@@ -105,10 +105,10 @@ AC_C_BIGENDIAN
 dnl Checks for library functions.
 dnl AC_FUNC_ALLOCA
 
-AC_TYPE_SIGNAL
 AC_FUNC_VPRINTF
 AC_CHECK_FUNCS(memset)
 
 dnl Check for files
 
-AC_OUTPUT(Makefile)
+AC_CONFIG_FILES([Makefile])
+AC_OUTPUT
