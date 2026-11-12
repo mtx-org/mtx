@@ -116,7 +116,7 @@ install: $(BINS)
 	done	
 	$(INSTALL_DIR) $(mandir) $(mandir)/man1
 	for file in mtx.1 tapeinfo.1 scsitape.1 scsieject.1 loaderinfo.1 ; do \
-	$(INSTALL_DOC) "$$file"  $(mandir)/man1 ; \
+	$(INSTALL_DOC) "$(srcdir)/$$file"  $(mandir)/man1 ; \
 	done
 
 clean:
