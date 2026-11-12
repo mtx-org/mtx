@@ -74,7 +74,7 @@ void Usage(void)
 /* open_device() -- set the 'DeviceFD' variable.... */
 void open_device(void)
 {
-	if (DeviceFD != -1)
+	if (DeviceFD != (DEVICE_TYPE) -1)
 	{
 		SCSI_CloseDevice("Unknown", DeviceFD);
 	}
@@ -91,7 +91,7 @@ int execute_command(struct command_table_struct *command)
 	 * If the device is not already open, then open it from the 
 	 * environment.
 	 */
-	if (DeviceFD == -1)
+	if (DeviceFD == (DEVICE_TYPE) -1)
 	{
 		/* try to get it from STAPE or TAPE environment variable... */
 		if ((device = getenv("STAPE")) == NULL &&

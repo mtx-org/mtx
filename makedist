@@ -15,5 +15,5 @@ then
 fi
 
 
-tar --exclude CVS --exclude .svn -czvhf mtx-${1}.tar.gz mtx-${1}
+tar --exclude CVS --exclude .svn --exclude .git -czvhf mtx-${1}.tar.gz mtx-${1}
 

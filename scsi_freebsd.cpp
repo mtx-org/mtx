@@ -82,7 +82,7 @@ int SCSI_ExecuteCommand(DEVICE_TYPE DeviceFD,
 						(Direction == Input ? CAM_DIR_IN : CAM_DIR_OUT) : 
 						CAM_DIR_NONE),			/* flags */
 					MSG_SIMPLE_Q_TAG,			/* tag action */
-					DataBuffer,					/* data ptr */
+					(uint8_t *)DataBuffer,		/* data ptr */
 					DataBufferLength,			/* xfer_len */
 					SSD_FULL_SIZE,				/* sense_len */
 					CDB_Length,					/* cdb_len */
