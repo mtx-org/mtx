@@ -225,7 +225,7 @@ tape changers (see /kernel/drv/sgen.conf and the sgen man page), type
 then reboot. You can find your changer in /devices by typing
 .B /usr/sbin/devfsadm -C
 to clean out no-longer-extant entries in your /devices directory, then
-.B find /devices -name \e\(**changer -print
+.B find /devices -name \e*changer -print
 to find the device name. Set the symbolic link
 .B /dev/changer
 to point
