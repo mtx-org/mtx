@@ -105,9 +105,9 @@ AC_C_BIGENDIAN
 dnl Checks for library functions.
 dnl AC_FUNC_ALLOCA
 
-AC_TYPE_SIGNAL
 AC_FUNC_VPRINTF
 
 dnl Check for files
 
-AC_OUTPUT(Makefile)
+AC_CONFIG_FILES([Makefile])
+AC_OUTPUT
