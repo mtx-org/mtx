@@ -1271,6 +1271,8 @@ ElementStatus_T *ReadElementStatus(DEVICE_TYPE MediumChangerFD, RequestSense_T *
 								DataBuffer, ElementStatus, mode_sense, NULL);
 
 			ElementStatus->StorageElementCount += ElementStatus->ImportExportCount;
+
+			free(DataBuffer);
 		}
 
 		/* ----------------- DRIVES ---------------------- */
