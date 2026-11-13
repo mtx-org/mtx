@@ -767,6 +767,16 @@ static int S_write(void)
 		while (len < buffersize)
 		{
 			result=(int)read(infile, buffer + len, (size_t)(buffersize - len));
+			if (result < 0)
+			{
+				if (errno == EINTR)
+				{
+					continue;
+				}
+				fprintf(stderr, "scsitape: read error: %s\n", strerror(errno));
+				fflush(stderr);
+				exit(1);
+			}
 			if (!result)
 			{
 				eof_input = 1;
