@@ -821,6 +821,31 @@ static int S_write(void)
  */ 
 
 
+/* Write all of 'len' bytes from 'buffer' to 'fd', retrying after short
+ * writes and interrupted calls. Exits with an error if the write fails,
+ * so that data read from tape is never silently lost.
+ */
+static void write_all(int fd, const char *buffer, unsigned int len)
+{
+	while (len > 0)
+	{
+		int written = (int)write(fd, buffer, len);
+
+		if (written < 0)
+		{
+			if (errno == EINTR)
+			{
+				continue;
+			}
+			fprintf(stderr, "scsitape: write error: %s\n", strerror(errno));
+			fflush(stderr);
+			exit(1);
+		}
+		buffer += written;
+		len -= (unsigned int)written;
+	}
+}
+
 static int S_read(void)
 {
 	char *buffer; /* the buffer we're going to be reading out of */
@@ -864,7 +889,7 @@ static int S_read(void)
 			/* okay, normal end of file? */
 			if (len > 0)
 			{
-				write(outfile,buffer,len);
+				write_all(outfile, buffer, len);
 			}
 
 #ifdef NEED_TO_GO_PAST_FILEMARK
@@ -884,7 +909,7 @@ static int S_read(void)
 			{
 				if (len > 0)
 				{
-					write(outfile,buffer,len);
+					write_all(outfile, buffer, len);
 				}
 			}
 			else
@@ -896,7 +921,7 @@ static int S_read(void)
 		}
 		else if (result == READ_OK)
 		{
-			write(outfile,buffer,len);
+			write_all(outfile, buffer, len);
 		}
 		else
 		{
