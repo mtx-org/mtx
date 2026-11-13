@@ -146,7 +146,7 @@ int execute_command(struct command_table_struct *command)
 	/* if the device is not already open, then open it from the 
 	* environment.
 	*/
-	if (!MediumChangerFD == -1)
+	if (MediumChangerFD == (DEVICE_TYPE) -1)
 	{
 		/* try to get it from STAPE or TAPE environment variable... */
 		device = getenv("STAPE");
