@@ -753,7 +753,7 @@ static int S_write(void)
 	}
 
 	/* sigh, make it oversized just to have some */  
-	buffer = malloc(buffersize+8); 
+	buffer = xmalloc(buffersize+8); 
 
 	eof_input = 0;
 	while (!eof_input)
@@ -883,7 +883,7 @@ static int S_read(void)
 	}
 
 	/* sigh, make it oversized just to have some */  
-	buffer = malloc(buffersize + 8); 
+	buffer = xmalloc(buffersize + 8); 
 
 	for ( ; ; )
 	{
