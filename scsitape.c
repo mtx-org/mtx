@@ -116,7 +116,7 @@ char *argv0;
 /* open_device() -- set the 'fh' variable.... */
 void open_device(void)
 {
-	if (MediumChangerFD != -1)
+	if (MediumChangerFD != (DEVICE_TYPE) -1)
 	{
 		SCSI_CloseDevice("Unknown",MediumChangerFD);  /* close it, sigh...  new device now! */
 	}

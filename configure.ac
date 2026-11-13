@@ -3,17 +3,17 @@ dnl Written Jan. 2001 Eric Lee Green
 
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(mtx.c)
-AC_CONFIG_HEADER(config.h)
+AC_CONFIG_HEADERS([config.h])
 
 dnl Check system.
-AC_CANONICAL_SYSTEM
+AC_CANONICAL_HOST
 AC_PREFIX_DEFAULT(/usr/local)
 
 case "$host_os" in
-  *linux*) AC_DEFINE(LINUX)
+  *linux*) AC_DEFINE([LINUX], [1], [Linux])
 	TARGET=linux
     ;;
-  *solaris*) AC_DEFINE(SOLARIS)
+  *solaris*) AC_DEFINE([SOLARIS], [1], [Solaris])
 	TARGET=solarissparc
 	;;
   *sunos*)  TARGET=solarissparc
@@ -28,7 +28,7 @@ case "$host_os" in
      ;;
   *HP*) TARGET=hpux
      ;;
-  *sequent*) AC_DEFINE(SEQUENT) 
+  *sequent*) AC_DEFINE([SEQUENT], [1], [Sequent]) 
 	;;
   *MINGW*) TARGET=mingw
      ;;
@@ -58,7 +58,6 @@ AC_PROG_INSTALL
 AC_CHECK_PROG(USE_OBJCOPY, objcopy, yes, no)
 
 dnl Checks for header files.
-AC_HEADER_STDC
 AC_CHECK_HEADERS(\
 	unistd.h \
 	stdlib.h \
@@ -94,7 +93,6 @@ dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
 AC_TYPE_SIZE_T
 AC_TYPE_PID_T       
-AC_HEADER_TIME
 AC_STRUCT_TM
 AC_CHECK_SIZEOF(int)
 AC_CHECK_SIZEOF(long)
@@ -105,9 +103,9 @@ AC_C_BIGENDIAN
 dnl Checks for library functions.
 dnl AC_FUNC_ALLOCA
 
-AC_TYPE_SIGNAL
 AC_FUNC_VPRINTF
 
 dnl Check for files
 
-AC_OUTPUT(Makefile)
+AC_CONFIG_FILES([Makefile])
+AC_OUTPUT
