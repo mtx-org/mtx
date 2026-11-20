@@ -146,7 +146,7 @@ int execute_command(struct command_table_struct *command)
 	/* if the device is not already open, then open it from the 
 	* environment.
 	*/
-	if (!MediumChangerFD == -1)
+	if (MediumChangerFD == (DEVICE_TYPE) -1)
 	{
 		/* try to get it from STAPE or TAPE environment variable... */
 		device = getenv("STAPE");
@@ -753,7 +753,7 @@ static int S_write(void)
 	}
 
 	/* sigh, make it oversized just to have some */  
-	buffer = malloc(buffersize+8); 
+	buffer = xmalloc(buffersize+8); 
 
 	eof_input = 0;
 	while (!eof_input)
@@ -767,6 +767,16 @@ static int S_write(void)
 		while (len < buffersize)
 		{
 			result=(int)read(infile, buffer + len, (size_t)(buffersize - len));
+			if (result < 0)
+			{
+				if (errno == EINTR)
+				{
+					continue;
+				}
+				fprintf(stderr, "scsitape: read error: %s\n", strerror(errno));
+				fflush(stderr);
+				exit(1);
+			}
 			if (!result)
 			{
 				eof_input = 1;
@@ -821,6 +831,31 @@ static int S_write(void)
  */ 
 
 
+/* Write all of 'len' bytes from 'buffer' to 'fd', retrying after short
+ * writes and interrupted calls. Exits with an error if the write fails,
+ * so that data read from tape is never silently lost.
+ */
+static void write_all(int fd, const char *buffer, unsigned int len)
+{
+	while (len > 0)
+	{
+		int written = (int)write(fd, buffer, len);
+
+		if (written < 0)
+		{
+			if (errno == EINTR)
+			{
+				continue;
+			}
+			fprintf(stderr, "scsitape: write error: %s\n", strerror(errno));
+			fflush(stderr);
+			exit(1);
+		}
+		buffer += written;
+		len -= (unsigned int)written;
+	}
+}
+
 static int S_read(void)
 {
 	char *buffer; /* the buffer we're going to be reading out of */
@@ -848,7 +883,7 @@ static int S_read(void)
 	}
 
 	/* sigh, make it oversized just to have some */  
-	buffer = malloc(buffersize + 8); 
+	buffer = xmalloc(buffersize + 8); 
 
 	for ( ; ; )
 	{
@@ -864,7 +899,7 @@ static int S_read(void)
 			/* okay, normal end of file? */
 			if (len > 0)
 			{
-				write(outfile,buffer,len);
+				write_all(outfile, buffer, len);
 			}
 
 #ifdef NEED_TO_GO_PAST_FILEMARK
@@ -884,7 +919,7 @@ static int S_read(void)
 			{
 				if (len > 0)
 				{
-					write(outfile,buffer,len);
+					write_all(outfile, buffer, len);
 				}
 			}
 			else
@@ -896,7 +931,7 @@ static int S_read(void)
 		}
 		else if (result == READ_OK)
 		{
-			write(outfile,buffer,len);
+			write_all(outfile, buffer, len);
 		}
 		else
 		{
