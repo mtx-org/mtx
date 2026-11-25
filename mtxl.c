@@ -620,6 +620,8 @@ static unsigned char *SendElementStatusRequestActual(
 {
 	CDB_T CDB;
 	boolean is_attached = false;
+	int result;
+	RequestSense_T UnitAttentionSense;
 
 	unsigned char *DataBuffer; /* size of data... */
 
@@ -684,8 +686,27 @@ static unsigned char *SendElementStatusRequestActual(
 	PrintHex(2, CDB, 12);
 #endif
 
-	if (SCSI_ExecuteCommand(MediumChangerFD, Input, &CDB, 12,
-		DataBuffer,NumBytes, RequestSense) != 0)
+	result = SCSI_ExecuteCommand(MediumChangerFD, Input, &CDB, 12,
+								 DataBuffer, NumBytes, RequestSense);
+
+	/*
+		If the changer reports UNIT ATTENTION (e.g. after the I/O station
+		or door was used, or a reset), clear it and retry the same request
+		once. Otherwise the fallback below would take it for a missing bar
+		code reader and silently drop the volume tags. ClearUnitAttention()
+		gets its own sense buffer so that, if it fails, the fallback still
+		sees the original sense data.
+	*/
+	if (result != 0 &&
+		RequestSense->ErrorCode == 0x70 && RequestSense->SenseKey == 6 &&
+		ClearUnitAttention(MediumChangerFD, &UnitAttentionSense) == 0)
+	{
+		slow_bzero((char *)DataBuffer, NumBytes);
+		result = SCSI_ExecuteCommand(MediumChangerFD, Input, &CDB, 12,
+									 DataBuffer, NumBytes, RequestSense);
+	}
+
+	if (result != 0)
 	{
 
 #ifdef DEBUG
