@@ -611,6 +611,11 @@ static unsigned char
 		retval[i]=tmp[i];
 	}
 
+	/* Callers check the page length field (page[1]) before reading; make it
+	 * agree with the (possibly clamped) number of bytes actually returned.
+	 */
+	retval[1] = (unsigned char)(pagelen - 2);
+
 	/* okay, free our input buffer: */
 	free(input_buffer);
 	return retval;
