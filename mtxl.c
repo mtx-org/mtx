@@ -543,6 +543,16 @@ static void FreeElementData(ElementStatus_T *data)
 	free(data->DataTransferElementFull);
 }
 
+/* Free everything returned by ReadElementStatus(). */
+void FreeElementStatus(ElementStatus_T *data)
+{
+	if (data != NULL)
+	{
+		FreeElementData(data);
+		free(data);
+	}
+}
+
 
 /* allocate data  */
 
