@@ -163,71 +163,79 @@ int BigEndian24(unsigned char *BigEndianData)
 
 void FatalError(char *ErrorMessage, ...)
 {
-#define FORMAT_BUF_LEN 1024
-
-	char	FormatBuffer[FORMAT_BUF_LEN];
-	char	*SourcePointer;
-	char	*TargetPointer = FormatBuffer;
-	char	Character, LastCharacter = '\0';
-	int		numchars = 0;
+	/*
+	 * Capture the errno text first: anything below (malloc, stdio) may
+	 * change errno before "%m" is expanded.
+	 */
+	const char	*ErrnoText = strerror(errno);
+	const char	*SourcePointer;
+	const char	*ErrnoPointer;
+	char		*FormatBuffer;
+	char		*TargetPointer;
+	size_t		ErrnoLength = strlen(ErrnoText);
+	size_t		BufferLength = strlen(ErrorMessage) + 1;
 
 	va_list ArgumentPointer;
-	va_start(ArgumentPointer, ErrorMessage);
-	/*  SourcePointer = "mtx: "; */
-	sprintf(TargetPointer,"%s: ",argv0);
-	numchars=strlen(TargetPointer);
 
-	while ((Character = *ErrorMessage++) != '\0')
+	/*
+	 * Expand "%m" to the errno text, leaving every other conversion for
+	 * vfprintf(). Each "%m" grows by at most twice the errno text, as any
+	 * '%' in that text is doubled so it prints literally.
+	 */
+	for (SourcePointer = ErrorMessage; *SourcePointer != '\0'; SourcePointer++)
 	{
-		if (LastCharacter == '%')
+		if (SourcePointer[0] == '%' && SourcePointer[1] == 'm')
 		{
-			if (Character == 'm')
-			{
-				SourcePointer = strerror(errno);
-				while ((Character = *SourcePointer++) != '\0')
-				{
-					*TargetPointer++ = Character;
-					numchars++;
-					if (numchars == FORMAT_BUF_LEN - 1)
-					{
-						break;
-					}
-				}
-				if (numchars == FORMAT_BUF_LEN - 1)
-				{
-					break;  /* break outer loop... */
-				}
-			}
-			else
-			{
-				*TargetPointer++ = '%';
-				*TargetPointer++ = Character;
-				numchars++;
-				if (numchars == FORMAT_BUF_LEN - 1)
-				{
-					break;
-				}
-			}
-			LastCharacter = '\0';
-		}
-		else
-		{
-			if (Character != '%')
-			{
-				*TargetPointer++ = Character;
-				numchars++;
-				if (numchars == FORMAT_BUF_LEN-1)
-				{
-					break;
-				}
-			}
-			LastCharacter = Character;
+			BufferLength += 2 * ErrnoLength;
 		}
 	}
 
-	*TargetPointer = '\0';  /* works even if we had to break from above... */
-	vfprintf(stderr, FormatBuffer, ArgumentPointer);
-	va_end(ArgumentPointer);
+	/* program name first */
+	fprintf(stderr, "%s: ", argv0 ? argv0 : "mtx");
+
+	/* Not xmalloc(): that reports failure through FatalError(). */
+	FormatBuffer = (char *)malloc(BufferLength);
+	if (FormatBuffer == NULL)
+	{
+		fputs(ErrorMessage, stderr);
+	}
+	else
+	{
+		SourcePointer = ErrorMessage;
+		TargetPointer = FormatBuffer;
+
+		while (*SourcePointer != '\0')
+		{
+			if (SourcePointer[0] == '%' && SourcePointer[1] == 'm')
+			{
+				for (ErrnoPointer = ErrnoText; *ErrnoPointer != '\0'; ErrnoPointer++)
+				{
+					if (*ErrnoPointer == '%')
+					{
+						*TargetPointer++ = '%';
+					}
+					*TargetPointer++ = *ErrnoPointer;
+				}
+				SourcePointer += 2;
+			}
+			else if (SourcePointer[0] == '%' && SourcePointer[1] != '\0')
+			{
+				/* copy "%x" as a pair so that "%%m" stays a literal "%m" */
+				*TargetPointer++ = *SourcePointer++;
+				*TargetPointer++ = *SourcePointer++;
+			}
+			else
+			{
+				*TargetPointer++ = *SourcePointer++;
+			}
+		}
+		*TargetPointer = '\0';
+
+		va_start(ArgumentPointer, ErrorMessage);
+		vfprintf(stderr, FormatBuffer, ArgumentPointer);
+		va_end(ArgumentPointer);
+		free(FormatBuffer);
+	}
 
 #ifndef VMS
 	exit(1);
