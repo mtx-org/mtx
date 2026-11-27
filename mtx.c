@@ -38,6 +38,7 @@ char *argv0;
 
 #include "mtx.h"	/* various defines for bit order etc. */
 #include "mtxl.h"
+#include <limits.h>
 
 /* A table for printing out the peripheral device type as ASCII. */ 
 static char *PeripheralDeviceType[32] =
@@ -216,7 +217,8 @@ static void do_Position(void)
 {
 	int driveno,src;
 
-	if (arg1 >= 0 && arg1 <= ElementStatus->StorageElementCount)
+	/* arg1 is a 1-based storage element number */
+	if (arg1 >= 1 && arg1 <= ElementStatus->StorageElementCount)
 	{
 		driveno = arg1 - 1;
 	}
@@ -237,6 +239,19 @@ static void AltReadElementStatus(void)
 }
 
 
+/*
+ * 1-based storage element to unload drive 'driveno' into, for First/Last/
+ * Next/Previous. If the source slot is unknown (-1) return -1, which makes
+ * Unload() report "No Source for tape in drive" rather than treating it
+ * as slot 0.
+ */
+static int SourceSlotArg(int driveno)
+{
+	int src = ElementStatus->DataTransferElementSourceStorageElementNumber[driveno];
+
+	return (src >= 0) ? src + 1 : -1;
+}
+
 /* First and Last are easy. Next is the bitch. */
 static void First(void)
 {
@@ -255,7 +270,7 @@ static void First(void)
 	if (ElementStatus->DataTransferElementFull[driveno])
 	{
 		/* if so, then unload it... */
-		arg1 = ElementStatus->DataTransferElementSourceStorageElementNumber[driveno] + 1;
+		arg1 = SourceSlotArg(driveno);
 		if (arg1 == 1)
 		{
 			printf("loading...done.\n");  /* it already has tape #1 in it! */ 
@@ -289,7 +304,7 @@ static void Last(void)
 	if (ElementStatus->DataTransferElementFull[driveno])
 	{
 		/* if so, then unload it... */
-		arg1 = ElementStatus->DataTransferElementSourceStorageElementNumber[driveno] + 1;
+		arg1 = SourceSlotArg(driveno);
 		if (arg1 >= (ElementStatus->StorageElementCount - ElementStatus->ImportExportCount))
 		{
 			printf("loading...done.\n");	/* it already has last tape in it! */ 
@@ -329,7 +344,7 @@ static void Previous(void)
 		{
 			FatalError("No More Media\n");		/* Already at the 1st slot...*/
 		}
-		arg1 = current + 1;		/* Args are 1 based */
+		arg1 = SourceSlotArg(driveno);		/* Args are 1 based */
 		arg2 = driveno;
 		Unload();
 	}
@@ -371,7 +386,7 @@ static void Next(void)
 		/* if so, unload it! */
 		current = ElementStatus->DataTransferElementSourceStorageElementNumber[driveno];
 
-		arg1 = current + 1;
+		arg1 = SourceSlotArg(driveno);
 		arg2 = driveno;
 		Unload();
 	}
@@ -721,6 +736,11 @@ static void Exchange(void)
 		arg3 = arg1;  /* true exchange of medium */
 	}
 
+	if (arg3 < 1 || arg3 > ElementStatus->StorageElementCount)
+	{
+		FatalError("Invalid second destination\n");
+	}
+
 	src = ElementStatus->StorageElementAddress[arg1 - 1];
 	dest = ElementStatus->StorageElementAddress[arg2 - 1];
 	dest2 = ElementStatus->StorageElementAddress[arg3 - 1];
@@ -785,6 +805,13 @@ static void Unload(void)
 		FatalError("No Media Changer Device Specified\n");
 	} 
 
+	/* check the drive first: it is used to look up the source slot */
+	if (arg2 < 0 || arg2 >= ElementStatus->DataTransferElementCount)
+	{
+		FatalError(	"illegal <drive-number> argument '%d' to 'unload' command\n",
+					arg2);
+	}
+
 	/* okay, we should be there: */
 	if (arg1 < 0)
 	{
@@ -799,16 +826,10 @@ static void Unload(void)
 		arg1--;		/* go from bogus 1-base to zero-base */
 	}
 
-	if (arg1 >= ElementStatus->StorageElementCount)
+	if (arg1 < 0 || arg1 >= ElementStatus->StorageElementCount)
 	{
 		FatalError( "illegal <storage-element-number> argument '%d' to 'unload' command\n",
 					arg1 + 1);
-	}
-
-	if (arg2 < 0 || arg2 >= ElementStatus->DataTransferElementCount)
-	{
-		FatalError(	"illegal <drive-number> argument '%d' to 'unload' command\n",
-					arg2);
 	}
 
 	if (!ElementStatus->DataTransferElementFull[arg2])
@@ -868,6 +889,7 @@ int get_arg(int idx)
 {
 	char *arg;
 	int retval = -1;
+	long value;
 
 	if (idx >= argc)
 	{
@@ -880,13 +902,23 @@ int get_arg(int idx)
 		return -1;  /* sorry! */
 	}
 
-	retval = atoi(arg);
+	/* reject values that don't fit in an int */
+	errno = 0;
+	value = strtol(arg, NULL, 10);
+	if (errno == ERANGE || value > INT_MAX)
+	{
+		FatalError("numeric argument '%s' is out of range\n", arg);
+	}
+
+	retval = (int)value;
 	return retval;
 }
 
 /* open_device() -- set the 'fh' variable.... */
 void open_device(void)
 {
+	static char *opened_device = NULL;	/* path of the previously opened device */
+
 	if (device_opened)
 	{
 		SCSI_CloseDevice("Unknown", MediumChangerFD);  /* close it, sigh...  new device now! */
@@ -894,6 +926,29 @@ void open_device(void)
 
 	MediumChangerFD = SCSI_OpenDevice(device);
 	device_opened = 1; /* SCSI_OpenDevice does an exit() if not. */
+
+	/*
+	 * Element addresses are per-device: status read from a different
+	 * device must not be used to plan moves on this one. Repeating the
+	 * same device keeps the cached status (including the updates made by
+	 * earlier load/unload commands), as before. Paths are compared as
+	 * strings, so two different paths to the same changer just cause a
+	 * fresh status read.
+	 */
+	if (opened_device != NULL && strcmp(opened_device, device) != 0)
+	{
+		if (ElementStatus != NULL)
+		{
+			FreeElementStatus(ElementStatus);
+			ElementStatus = NULL;
+		}
+		if (inquiry_info != NULL)
+		{
+			free(inquiry_info);
+			inquiry_info = NULL;
+		}
+	}
+	opened_device = device;
 }
 
 

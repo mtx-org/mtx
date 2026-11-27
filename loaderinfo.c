@@ -233,19 +233,41 @@ static unsigned char
 		fprintf(stderr,"Could not execute mode sense...\n");
 		fflush(stderr);
 #endif
+		free(input_buffer);
 		return NULL; /* sorry, couldn't do it. */
 	}
 
-	/* First skip past any header.... */
+	/* First skip past any header.... (same length checks as tapeinfo's
+	 * mode_sense())
+	 */
+	if (4 + input_buffer[3] >= 255)
+	{
+		free(input_buffer);
+		return NULL;
+	}
 	tmp = input_buffer + 4 + input_buffer[3];
 	/* now find out real length of page... */
 	pagelen=tmp[1] + 2;
-	retval = xmalloc(pagelen);
+	if (pagelen > 255 - 4 - input_buffer[3])
+	{
+		pagelen = 255 - 4 - input_buffer[3];
+	}
+	if (pagelen < 2)
+	{
+		free(input_buffer);
+		return NULL;
+	}
+	/* The callers read a fixed-size struct of alloc_len bytes from the
+	 * page: return at least that much, zero-filled.
+	 */
+	retval = xzmalloc(pagelen > alloc_len ? pagelen : alloc_len);
 	/* and copy our data to the new page. */
 	for (i = 0; i < pagelen; i++)
 	{
 		retval[i] = tmp[i];
 	}
+	/* make the page length field agree with what we actually copied */
+	retval[1] = (unsigned char)(pagelen - 2);
 	/* okay, free our input buffer: */
 	free(input_buffer);
 	return retval;
@@ -488,7 +510,6 @@ int main(int argc, char **argv)
 	argv0=argv[0];
 	if (argc != 3)
 	{
-		fprintf(stderr,"argc=%d",argc);
 		usage();
 	}
 

@@ -60,6 +60,7 @@ ElementStatus_T *ReadElementStatus(	DEVICE_TYPE MediumChangerFD,
 									RequestSense_T *RequestSense,
 									Inquiry_T *inquiry_info,
 									SCSI_Flags_T *flags);
+void FreeElementStatus(ElementStatus_T *data);
 
 Inquiry_T *RequestInquiry(	DEVICE_TYPE fd,
 							RequestSense_T *RequestSense);

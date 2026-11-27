@@ -39,6 +39,8 @@
 /* zap the following define when we finally add real import/export support */
 #define IMPORT_EXPORT_HACK 1 /* for the moment, import/export == storage */
 
+#define ReadElementStatusMaxElements 10000
+
 /* First, do some SCSI routines: */
 
 /* the camlib is used on FreeBSD. */
@@ -161,71 +163,79 @@ int BigEndian24(unsigned char *BigEndianData)
 
 void FatalError(char *ErrorMessage, ...)
 {
-#define FORMAT_BUF_LEN 1024
-
-	char	FormatBuffer[FORMAT_BUF_LEN];
-	char	*SourcePointer;
-	char	*TargetPointer = FormatBuffer;
-	char	Character, LastCharacter = '\0';
-	int		numchars = 0;
+	/*
+	 * Capture the errno text first: anything below (malloc, stdio) may
+	 * change errno before "%m" is expanded.
+	 */
+	const char	*ErrnoText = strerror(errno);
+	const char	*SourcePointer;
+	const char	*ErrnoPointer;
+	char		*FormatBuffer;
+	char		*TargetPointer;
+	size_t		ErrnoLength = strlen(ErrnoText);
+	size_t		BufferLength = strlen(ErrorMessage) + 1;
 
 	va_list ArgumentPointer;
-	va_start(ArgumentPointer, ErrorMessage);
-	/*  SourcePointer = "mtx: "; */
-	sprintf(TargetPointer,"%s: ",argv0);
-	numchars=strlen(TargetPointer);
 
-	while ((Character = *ErrorMessage++) != '\0')
+	/*
+	 * Expand "%m" to the errno text, leaving every other conversion for
+	 * vfprintf(). Each "%m" grows by at most twice the errno text, as any
+	 * '%' in that text is doubled so it prints literally.
+	 */
+	for (SourcePointer = ErrorMessage; *SourcePointer != '\0'; SourcePointer++)
 	{
-		if (LastCharacter == '%')
+		if (SourcePointer[0] == '%' && SourcePointer[1] == 'm')
 		{
-			if (Character == 'm')
-			{
-				SourcePointer = strerror(errno);
-				while ((Character = *SourcePointer++) != '\0')
-				{
-					*TargetPointer++ = Character;
-					numchars++;
-					if (numchars == FORMAT_BUF_LEN - 1)
-					{
-						break;
-					}
-				}
-				if (numchars == FORMAT_BUF_LEN - 1)
-				{
-					break;  /* break outer loop... */
-				}
-			}
-			else
-			{
-				*TargetPointer++ = '%';
-				*TargetPointer++ = Character;
-				numchars++;
-				if (numchars == FORMAT_BUF_LEN - 1)
-				{
-					break;
-				}
-			}
-			LastCharacter = '\0';
-		}
-		else
-		{
-			if (Character != '%')
-			{
-				*TargetPointer++ = Character;
-				numchars++;
-				if (numchars == FORMAT_BUF_LEN-1)
-				{
-					break;
-				}
-			}
-			LastCharacter = Character;
+			BufferLength += 2 * ErrnoLength;
 		}
 	}
 
-	*TargetPointer = '\0';  /* works even if we had to break from above... */
-	vfprintf(stderr, FormatBuffer, ArgumentPointer);
-	va_end(ArgumentPointer);
+	/* program name first */
+	fprintf(stderr, "%s: ", argv0 ? argv0 : "mtx");
+
+	/* Not xmalloc(): that reports failure through FatalError(). */
+	FormatBuffer = (char *)malloc(BufferLength);
+	if (FormatBuffer == NULL)
+	{
+		fputs(ErrorMessage, stderr);
+	}
+	else
+	{
+		SourcePointer = ErrorMessage;
+		TargetPointer = FormatBuffer;
+
+		while (*SourcePointer != '\0')
+		{
+			if (SourcePointer[0] == '%' && SourcePointer[1] == 'm')
+			{
+				for (ErrnoPointer = ErrnoText; *ErrnoPointer != '\0'; ErrnoPointer++)
+				{
+					if (*ErrnoPointer == '%')
+					{
+						*TargetPointer++ = '%';
+					}
+					*TargetPointer++ = *ErrnoPointer;
+				}
+				SourcePointer += 2;
+			}
+			else if (SourcePointer[0] == '%' && SourcePointer[1] != '\0')
+			{
+				/* copy "%x" as a pair so that "%%m" stays a literal "%m" */
+				*TargetPointer++ = *SourcePointer++;
+				*TargetPointer++ = *SourcePointer++;
+			}
+			else
+			{
+				*TargetPointer++ = *SourcePointer++;
+			}
+		}
+		*TargetPointer = '\0';
+
+		va_start(ArgumentPointer, ErrorMessage);
+		vfprintf(stderr, FormatBuffer, ArgumentPointer);
+		va_end(ArgumentPointer);
+		free(FormatBuffer);
+	}
 
 #ifndef VMS
 	exit(1);
@@ -434,7 +444,16 @@ ElementModeSense_T *ReadAssignmentPage(DEVICE_TYPE MediumChangerFD)
 	PrintHex(0, input_buffer, 30);
 #endif
 
-	/* first, skip past: mode data header, and block descriptor header if any */
+	/* first, skip past: mode data header, and block descriptor header if any.
+	 * Use the defaults if the block descriptor length isn't one we handle.
+	 */
+	if (4 + input_buffer[3] + sizeof(ElementModeSensePage_T) > sizeof(input_buffer))
+	{
+		fprintf(stderr, "Mode sense (0x1A) for Page 0x1D: block descriptor length %d too large\n",
+				input_buffer[3]);
+		fflush(stderr);
+		return NULL;
+	}
 	sense_page=(ElementModeSensePage_T *)(input_buffer+4+input_buffer[3]);
 
 #ifdef DEBUG_MODE_SENSE
@@ -500,7 +519,7 @@ ElementModeSense_T *ReadAssignmentPage(DEVICE_TYPE MediumChangerFD)
 	retval->MaxReadElementStatusData =
 		(sizeof(ElementStatusDataHeader_T) +
 		4 * sizeof(ElementStatusPage_T) +
-		retval->NumElements * sizeof(TransportElementDescriptor_T));
+		(retval->NumElements > ReadElementStatusMaxElements?ReadElementStatusMaxElements:retval->NumElements) * sizeof(TransportElementDescriptor_T));
 
 #ifdef IMPORT_EXPORT_HACK
 	retval->NumStorage = retval->NumStorage+retval->NumImportExport;
@@ -531,6 +550,16 @@ static void FreeElementData(ElementStatus_T *data)
 	free(data->StorageElementIsImportExport);
 	free(data->StorageElementFull);
 	free(data->DataTransferElementFull);
+}
+
+/* Free everything returned by ReadElementStatus(). */
+void FreeElementStatus(ElementStatus_T *data)
+{
+	if (data != NULL)
+	{
+		FreeElementData(data);
+		free(data);
+	}
 }
 
 
@@ -600,6 +629,8 @@ static unsigned char *SendElementStatusRequestActual(
 {
 	CDB_T CDB;
 	boolean is_attached = false;
+	int result;
+	RequestSense_T UnitAttentionSense;
 
 	unsigned char *DataBuffer; /* size of data... */
 
@@ -634,8 +665,10 @@ static unsigned char *SendElementStatusRequestActual(
 	}
 
 #ifdef HAVE_GET_ID_LUN
-	CDB[1] = (scsi_id->lun << 5) | ((flags->no_barcodes) ? 
-		0 : 0x10) | flags->elementtype;  /* Lun + VolTag + Type code */
+	/* SCSI_GetIDLun() returns NULL if the ioctl fails; the LUN field in
+	 * the CDB is only 3 bits wide, so leave it zero if we can't fit it. */
+	CDB[1] = ((scsi_id != NULL && scsi_id->lun <= 7) ? (scsi_id->lun << 5) : 0) |
+		((flags->no_barcodes) ? 0 : 0x10) | flags->elementtype;  /* Lun + VolTag + Type code */
 	free(scsi_id);
 #else
 	/* Element Type Code = 0, VolTag = 1 */
@@ -664,8 +697,27 @@ static unsigned char *SendElementStatusRequestActual(
 	PrintHex(2, CDB, 12);
 #endif
 
-	if (SCSI_ExecuteCommand(MediumChangerFD, Input, &CDB, 12,
-		DataBuffer,NumBytes, RequestSense) != 0)
+	result = SCSI_ExecuteCommand(MediumChangerFD, Input, &CDB, 12,
+								 DataBuffer, NumBytes, RequestSense);
+
+	/*
+		If the changer reports UNIT ATTENTION (e.g. after the I/O station
+		or door was used, or a reset), clear it and retry the same request
+		once. Otherwise the fallback below would take it for a missing bar
+		code reader and silently drop the volume tags. ClearUnitAttention()
+		gets its own sense buffer so that, if it fails, the fallback still
+		sees the original sense data.
+	*/
+	if (result != 0 &&
+		RequestSense->ErrorCode == 0x70 && RequestSense->SenseKey == 6 &&
+		ClearUnitAttention(MediumChangerFD, &UnitAttentionSense) == 0)
+	{
+		slow_bzero((char *)DataBuffer, NumBytes);
+		result = SCSI_ExecuteCommand(MediumChangerFD, Input, &CDB, 12,
+									 DataBuffer, NumBytes, RequestSense);
+	}
+
+	if (result != 0)
 	{
 
 #ifdef DEBUG
@@ -724,13 +776,17 @@ static unsigned char *SendElementStatusRequestActual(
 }
 
 
-unsigned char *SendElementStatusRequest(DEVICE_TYPE MediumChangerFD,
+/* On success *DataBufferSize is set to the number of bytes in the returned
+ * buffer.
+ */
+static unsigned char *SendElementStatusRequest(DEVICE_TYPE MediumChangerFD,
 										RequestSense_T *RequestSense,
 										Inquiry_T *inquiry_info, 
 										SCSI_Flags_T *flags,
 										int ElementStart,
 										int NumElements,
-										int NumBytes
+										int NumBytes,
+										int *DataBufferSize
 										)
 {
 	unsigned char *DataBuffer; /* size of data... */
@@ -779,17 +835,19 @@ unsigned char *SendElementStatusRequest(DEVICE_TYPE MediumChangerFD,
 		{
 			/* uh-oh, retry! */
 			free(DataBuffer); /* solve memory leak */
+			NumBytes = real_numbytes;
 			DataBuffer = SendElementStatusRequestActual(MediumChangerFD,
 														RequestSense,
 														inquiry_info,
 														flags,
 														ElementStart,
 														NumElements,
-														real_numbytes
+														NumBytes
 														);
 		}
 	}
 
+	*DataBufferSize = (DataBuffer != NULL) ? NumBytes : 0;
 	return DataBuffer;
 }
 
@@ -804,12 +862,15 @@ unsigned char *SendElementStatusRequest(DEVICE_TYPE MediumChangerFD,
 static void ParseElementStatus(	int *EmptyStorageElementAddress,
 								int *EmptyStorageElementCount,
 								unsigned char *DataBuffer,
+								int DataBufferSize,
 								ElementStatus_T *ElementStatus,
 								ElementModeSense_T *mode_sense,
 								int *pNextElement
 								)
 {
 	unsigned char *DataPointer = DataBuffer;
+	/* end of the response data */
+	unsigned char *DataEnd = DataBuffer + DataBufferSize;
 	TransportElementDescriptor_T TEBuf;
 	TransportElementDescriptor_T *TransportElementDescriptor;
 	ElementStatusDataHeader_T *ElementStatusDataHeader;
@@ -819,6 +880,13 @@ static void ParseElementStatus(	int *EmptyStorageElementAddress,
 	int TransportElementDescriptorLength;
 	int BytesAvailable;
 	int ImportExportIndex;
+
+	if (DataBufferSize < (int)sizeof(ElementStatusDataHeader_T))
+	{
+		fprintf(stderr,"Warning:Element Status data too short (%d bytes)\n", DataBufferSize);
+		fflush(stderr);
+		return;
+	}
 
 	ElementStatusDataHeader = (ElementStatusDataHeader_T *) DataPointer;
 	DataPointer += sizeof(ElementStatusDataHeader_T);
@@ -838,6 +906,14 @@ static void ParseElementStatus(	int *EmptyStorageElementAddress,
 		fprintf(stderr,"Working on element # %d Element Count %d\n",got_element_num,ElementCount);
 		got_element_num++;
 #endif
+
+		if (DataEnd - DataPointer < (int)sizeof(ElementStatusPage_T))
+		{
+			fprintf(stderr,"Warning:Element Status data truncated (%d elements not reported)\n",
+					ElementCount);
+			fflush(stderr);
+			return; /* we're done :-(. */
+		}
 
 		memcpy(&ESBuf, DataPointer, sizeof(ElementStatusPage_T));
 		ElementStatusPage = &ESBuf;
@@ -877,6 +953,18 @@ static void ParseElementStatus(	int *EmptyStorageElementAddress,
 		}
 		while (BytesAvailable > 0)
 		{
+			if (DataEnd - DataPointer < TransportElementDescriptorLength)
+			{
+				fprintf(stderr,"Warning:Element Status descriptor data truncated (%d bytes available, descriptor length %d)\n",
+						(int)(DataEnd - DataPointer), TransportElementDescriptorLength);
+				fflush(stderr);
+				return; /* we're done :-(. */
+			}
+
+			/* start each descriptor from a clean buffer: descriptors may
+			 * be shorter than TEBuf (e.g. without volume tags) */
+			memset(&TEBuf, 0, sizeof(TEBuf));
+
 			/* TransportElementDescriptor =
 			(TransportElementDescriptor_T *) DataPointer; */
 			memcpy(&TEBuf, DataPointer, 
@@ -928,6 +1016,14 @@ static void ParseElementStatus(	int *EmptyStorageElementAddress,
 
 				ImportExportIndex = mode_sense->NumStorage - mode_sense->NumImportExport + ElementStatus->ImportExportCount;
 
+				if (ImportExportIndex < 0 || ImportExportIndex >= mode_sense->NumStorage)
+				{
+					fprintf(stderr,"Warning:Inconsistent Import/Export element counts (storage %d, import/export %d)\n",
+							mode_sense->NumStorage, mode_sense->NumImportExport);
+					fflush(stderr);
+					return; /* we're done :-(. */
+				}
+
 				ElementStatus->StorageElementAddress[ImportExportIndex] =
 					BigEndian16(TransportElementDescriptor->ElementAddress);
 				ElementStatus->StorageElementFull[ImportExportIndex] =
@@ -968,6 +1064,20 @@ static void ParseElementStatus(	int *EmptyStorageElementAddress,
 					TransportElementDescriptor->AdditionalSenseCodeQualifier==0x02) 
 					continue;
 
+				/*
+					Note that the original mtx had no check here for 
+					buffer overflow, though some drives might mistakingly
+					do one... 
+				*/
+				if (ElementStatus->StorageElementCount >= mode_sense->NumStorage)
+				{
+					fprintf(stderr,"Warning:Too Many Storage Elements Reported (expected %d, now have %d\n",
+							mode_sense->NumStorage,
+							ElementStatus->StorageElementCount + 1);
+					fflush(stderr);
+					return; /* we're done :-(. */
+				}
+
 				ElementStatus->StorageElementAddress[ElementStatus->StorageElementCount] =
 					BigEndian16(TransportElementDescriptor->ElementAddress);
 				ElementStatus->StorageElementFull[ElementStatus->StorageElementCount] =
@@ -1005,20 +1115,6 @@ static void ParseElementStatus(	int *EmptyStorageElementAddress,
 				}
 
 				ElementStatus->StorageElementCount++;
-				/*
-					Note that the original mtx had no check here for 
-					buffer overflow, though some drives might mistakingly
-					do one... 
-				*/
-
-				if (ElementStatus->StorageElementCount > mode_sense->NumStorage)
-				{
-					fprintf(stderr,"Warning:Too Many Storage Elements Reported (expected %d, now have %d\n",
-							mode_sense->NumStorage,
-							ElementStatus->StorageElementCount);
-					fflush(stderr);
-					return; /* we're done :-(. */
-				}
 				break;
 
 			case DataTransferElement:
@@ -1036,6 +1132,11 @@ static void ParseElementStatus(	int *EmptyStorageElementAddress,
 					TransportElementDescriptor->AdditionalSenseCodeQualifier==0x04)
 				{
 					continue;
+				}
+
+				if (ElementStatus->DataTransferElementCount >= mode_sense->NumDataTransfer)
+				{
+					FatalError("Too many Data Transfer Elements Reported\n");
 				}
 
 				/*	generalize it. Does it work? Let's try it! */
@@ -1062,11 +1163,6 @@ static void ParseElementStatus(	int *EmptyStorageElementAddress,
 						ElementStatus->DataTransferElementFull[ElementStatus->DataTransferElementCount],
 						ElementStatus->DataTransferElementSourceStorageElementNumber[ElementStatus->DataTransferElementCount]);
 #endif
-				if (ElementStatus->DataTransferElementCount >= mode_sense->NumDataTransfer)
-				{
-					FatalError("Too many Data Transfer Elements Reported\n");
-				}
-
 				if (ElementStatusPage->VolBits & E2_PVOLTAG)
 				{
 					copy_barcode(TransportElementDescriptor->PrimaryVolumeTag,
@@ -1110,6 +1206,22 @@ static void ParseElementStatus(	int *EmptyStorageElementAddress,
 }
 
 
+/*
+ * Import/export elements are stored after the storage elements, and their
+ * count is added to StorageElementCount. Keep the total within the number
+ * of storage elements announced in the mode page.
+ */
+static void ClampStorageElementCount(ElementStatus_T *ElementStatus, ElementModeSense_T *mode_sense)
+{
+	if (ElementStatus->StorageElementCount > mode_sense->NumStorage)
+	{
+		fprintf(stderr,"Warning:Too Many Storage and Import/Export Elements Reported (expected %d, have %d)\n",
+				mode_sense->NumStorage, ElementStatus->StorageElementCount);
+		fflush(stderr);
+		ElementStatus->StorageElementCount = mode_sense->NumStorage;
+	}
+}
+
 /********************* Real ReadElementStatus ********************* */
 
 /*
@@ -1134,6 +1246,7 @@ ElementStatus_T *ReadElementStatus(DEVICE_TYPE MediumChangerFD, RequestSense_T *
 	ElementStatus_T *ElementStatus;
 
 	unsigned char *DataBuffer; /* size of data... */
+	int DataBufferSize;
 
 	int EmptyStorageElementCount=0;
 	int *EmptyStorageElementAddress; /* [MAX_STORAGE_ELEMENTS]; */
@@ -1141,6 +1254,7 @@ ElementStatus_T *ReadElementStatus(DEVICE_TYPE MediumChangerFD, RequestSense_T *
 	int empty_idx = 0;
 	boolean is_attached = false;
 	int i,j;
+	int FirstElement, NumElements, NumThisTime;
 
 	ElementModeSense_T *mode_sense = NULL;
 
@@ -1162,7 +1276,9 @@ ElementStatus_T *ReadElementStatus(DEVICE_TYPE MediumChangerFD, RequestSense_T *
 
 	if (!mode_sense)
 	{
-		mode_sense = (ElementModeSense_T *)xmalloc(sizeof(ElementModeSense_T));
+		/* zeroed: the fields not set below (NumImportExport and the
+		 * element start addresses) are still used. */
+		mode_sense = (ElementModeSense_T *)xzmalloc(sizeof(ElementModeSense_T));
 		mode_sense->NumMediumTransport = MAX_TRANSPORT_ELEMENTS;
 		mode_sense->NumStorage = MAX_STORAGE_ELEMENTS;
 		mode_sense->NumDataTransfer = MAX_TRANSFER_ELEMENTS;
@@ -1207,33 +1323,50 @@ ElementStatus_T *ReadElementStatus(DEVICE_TYPE MediumChangerFD, RequestSense_T *
 		fprintf(stderr,"Using original element status polling method (storage, import/export, drivers etc independantly)\n");
 #endif
 		flags->elementtype = StorageElement; /* sigh! */
-		DataBuffer = SendElementStatusRequest(	MediumChangerFD, RequestSense,
-												inquiry_info, flags,
-												mode_sense->StorageStart,
-												/* adjust for import/export. */
-												mode_sense->NumStorage - mode_sense->NumImportExport,
-												mode_sense->MaxReadElementStatusData);
 
-		if (!DataBuffer)
+		NumElements = mode_sense->NumStorage - mode_sense->NumImportExport;
+		FirstElement = mode_sense->StorageStart;
+
+		do
 		{
+
+			NumThisTime = NumElements;
+			if (NumThisTime > ReadElementStatusMaxElements) NumThisTime=ReadElementStatusMaxElements;
+
+			DataBuffer = SendElementStatusRequest(	MediumChangerFD, RequestSense,
+													inquiry_info, flags,
+													FirstElement,
+													/* adjust for import/export. */
+													NumThisTime,
+													mode_sense->MaxReadElementStatusData,
+													&DataBufferSize);
+
+			if (!DataBuffer)
+			{
 #ifdef DEBUG
-			fprintf(stderr,"Had no elements!\n");
+				fprintf(stderr,"Had no elements!\n");
 #endif
-			/* darn. Free up stuff and return. */
+				/* darn. Free up stuff and return. */
 #ifdef DEBUG_MODE_SENSE
-			PrintRequestSense(RequestSense);
+				PrintRequestSense(RequestSense);
 #endif
-			FreeElementData(ElementStatus);
-			return NULL; 
-		}
+				FreeElementStatus(ElementStatus);
+				free(mode_sense);
+				free(EmptyStorageElementAddress);
+				return NULL;
+			}
 
 #ifdef DEBUG
-		fprintf(stderr, "Parsing storage elements\n");
+			fprintf(stderr, "Parsing storage elements\n");
 #endif
-		ParseElementStatus(EmptyStorageElementAddress, &EmptyStorageElementCount,
-			DataBuffer,ElementStatus,mode_sense,NULL);
+			ParseElementStatus(EmptyStorageElementAddress, &EmptyStorageElementCount,
+				DataBuffer, DataBufferSize,ElementStatus,mode_sense,NULL);
 
-		free(DataBuffer); /* sigh! */
+			free(DataBuffer); /* sigh! */
+			FirstElement += NumThisTime;
+			NumElements -= NumThisTime;
+
+		} while ( NumElements > 0 );
 
 		/* --------------IMPORT/EXPORT--------------- */
 		/* Next let's see if we need to do Import/Export: */
@@ -1247,7 +1380,8 @@ ElementStatus_T *ReadElementStatus(DEVICE_TYPE MediumChangerFD, RequestSense_T *
 													inquiry_info, flags,
 													mode_sense->ImportExportStart,
 													mode_sense->NumImportExport,
-													mode_sense->MaxReadElementStatusData);
+													mode_sense->MaxReadElementStatusData,
+													&DataBufferSize);
 
 			if (!DataBuffer)
 			{
@@ -1258,7 +1392,9 @@ ElementStatus_T *ReadElementStatus(DEVICE_TYPE MediumChangerFD, RequestSense_T *
 #ifdef DEBUG_MODE_SENSE
 				PrintRequestSense(RequestSense);
 #endif
-				FreeElementData(ElementStatus);
+				FreeElementStatus(ElementStatus);
+				free(mode_sense);
+				free(EmptyStorageElementAddress);
 				return NULL;
 			}
 #ifdef DEBUG
@@ -1268,9 +1404,10 @@ ElementStatus_T *ReadElementStatus(DEVICE_TYPE MediumChangerFD, RequestSense_T *
 			dump_data(DataBuffer, 100);		/* dump some data :-(. */
 #endif
 			ParseElementStatus(	EmptyStorageElementAddress, &EmptyStorageElementCount,
-								DataBuffer, ElementStatus, mode_sense, NULL);
+								DataBuffer, DataBufferSize, ElementStatus, mode_sense, NULL);
 
 			ElementStatus->StorageElementCount += ElementStatus->ImportExportCount;
+			ClampStorageElementCount(ElementStatus, mode_sense);
 
 			free(DataBuffer);
 		}
@@ -1285,7 +1422,8 @@ ElementStatus_T *ReadElementStatus(DEVICE_TYPE MediumChangerFD, RequestSense_T *
 												inquiry_info, flags,
 												mode_sense->DataTransferStart,
 												mode_sense->NumDataTransfer,
-												mode_sense->MaxReadElementStatusData);
+												mode_sense->MaxReadElementStatusData,
+													&DataBufferSize);
 		if (!DataBuffer)
 		{
 #ifdef DEBUG
@@ -1295,15 +1433,17 @@ ElementStatus_T *ReadElementStatus(DEVICE_TYPE MediumChangerFD, RequestSense_T *
 #ifdef DEBUG_MODE_SENSE
 			PrintRequestSense(RequestSense);
 #endif
-			FreeElementData(ElementStatus);
-			return NULL; 
+			FreeElementStatus(ElementStatus);
+			free(mode_sense);
+			free(EmptyStorageElementAddress);
+			return NULL;
 		}
 
 #ifdef DEBUG
 		fprintf(stderr,"Parsing data for data transfer element (drive) status\n");
 #endif
 		ParseElementStatus(	EmptyStorageElementAddress, &EmptyStorageElementCount,
-							DataBuffer,ElementStatus, mode_sense, NULL);
+							DataBuffer, DataBufferSize,ElementStatus, mode_sense, NULL);
 
 		free(DataBuffer); /* sigh! */
 
@@ -1324,7 +1464,8 @@ ElementStatus_T *ReadElementStatus(DEVICE_TYPE MediumChangerFD, RequestSense_T *
 													inquiry_info, flags,
 													mode_sense->MediumTransportStart,
 													1, /* only get 1, sigh. */
-													mode_sense->MaxReadElementStatusData);
+													mode_sense->MaxReadElementStatusData,
+													&DataBufferSize);
 			if (!DataBuffer)
 			{
 #ifdef DEBUG
@@ -1334,14 +1475,16 @@ ElementStatus_T *ReadElementStatus(DEVICE_TYPE MediumChangerFD, RequestSense_T *
 #ifdef DEBUG_MODE_SENSE
 				PrintRequestSense(RequestSense);
 #endif
-				FreeElementData(ElementStatus);
-				return NULL; 
+				FreeElementStatus(ElementStatus);
+				free(mode_sense);
+				free(EmptyStorageElementAddress);
+				return NULL;
 			} 
 #ifdef DEBUG
 			fprintf(stderr,"Parsing robot arm data\n");
 #endif
 			ParseElementStatus(	EmptyStorageElementAddress, &EmptyStorageElementCount,
-								DataBuffer, ElementStatus, mode_sense, NULL);
+								DataBuffer, DataBufferSize, ElementStatus, mode_sense, NULL);
 
 			free(DataBuffer);
 		}
@@ -1369,7 +1512,8 @@ ElementStatus_T *ReadElementStatus(DEVICE_TYPE MediumChangerFD, RequestSense_T *
 													nNextEl,//mode_sense->StorageStart,
 													/* adjust for import/export. */
 													mode_sense->NumStorage - mode_sense->NumImportExport,//FIX ME:this should be a more sensible value
-													mode_sense->MaxReadElementStatusData);
+													mode_sense->MaxReadElementStatusData,
+													&DataBufferSize);
 			if (!DataBuffer)
 			{
 				if (RequestSense->AdditionalSenseCode == 0x21 && 
@@ -1380,19 +1524,22 @@ ElementStatus_T *ReadElementStatus(DEVICE_TYPE MediumChangerFD, RequestSense_T *
 				}
 
 				/* darn. Free up stuff and return. */
-				FreeElementData(ElementStatus);
-				return NULL; 
+				FreeElementStatus(ElementStatus);
+				free(mode_sense);
+				free(EmptyStorageElementAddress);
+				return NULL;
 			} 
 
 			nLastEl = nNextEl;
 
 			ParseElementStatus(	EmptyStorageElementAddress, &EmptyStorageElementCount,
-								DataBuffer, ElementStatus, mode_sense, &nNextEl);
+								DataBuffer, DataBufferSize, ElementStatus, mode_sense, &nNextEl);
 
 			free(DataBuffer); /* sigh! */
 		}
 
 		ElementStatus->StorageElementCount += ElementStatus->ImportExportCount;
+		ClampStorageElementCount(ElementStatus, mode_sense);
 	}
 
 	/*---------------------- Sanity Checking ------------------- */
@@ -1489,7 +1636,8 @@ ElementStatus_T *ReadElementStatus(DEVICE_TYPE MediumChangerFD, RequestSense_T *
 					empty_idx);
 #endif
 			ElementStatus->DataTransferElementSourceStorageElementNumber[i] =
-				EmptyStorageElementAddress[empty_idx++];
+				(empty_idx < EmptyStorageElementCount) ?
+					EmptyStorageElementAddress[empty_idx++] : -1;
 		}
 	}
 

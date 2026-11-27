@@ -63,7 +63,7 @@
 #endif
 
 void Usage(void) {
-  FatalError("Usage: scsitape -f <generic-device> <command> where <command> is:\n setblk <n> | fsf <n> | bsf <n> | eod | rewind | eject | mark <n> |\n  seek <n> | read [<blksize> [<numblocks]] | write [<blocksize>] \n");
+  FatalError("Usage: scsitape -f <generic-device> <command> where <command> is:\n setblk <n> | fsf <n> | bsf <n> | eod | rewind | eject | erase |\n  mark <n> | seek <n> | read [<blksize> [<numblocks]] | write [<blocksize>]\n");
 }
 
 #define arg1 (arg[0])  /* for backward compatibility, sigh */
@@ -575,6 +575,7 @@ int SCSI_readt(DEVICE_TYPE fd, char * buf, unsigned int bufsize, unsigned int *l
 
 	int blockCount;
 	int info;
+	unsigned int uinfo;
 
 	RequestSense_T RequestSense;
 
@@ -638,17 +639,30 @@ int SCSI_readt(DEVICE_TYPE fd, char * buf, unsigned int bufsize, unsigned int *l
 			we will have to account for that and set it to zero if so, so that
 			we return the proper # of blocks read. 
 			*/
-			info = ((RequestSense.Information[0] << 24) +
-					(RequestSense.Information[1] << 16) +
-					(RequestSense.Information[2] << 8) +
-					 RequestSense.Information[3]);
+			uinfo = ((unsigned int)RequestSense.Information[0] << 24) |
+					((unsigned int)RequestSense.Information[1] << 16) |
+					((unsigned int)RequestSense.Information[2] << 8) |
+					 (unsigned int)RequestSense.Information[3];
 
-			/* on 64-bit platforms, we may need to turn 'info' into a negative # */
-			if (info > 0x7fffffff)
-				info = 0;
-
-			if (info < 0)
-				info=0;  /* make sure  we don't return too big len read. */
+			if (uinfo & 0x80000000U)
+			{
+				info = 0;  /* negative: make sure we don't return too big len read. */
+			}
+			else if (uinfo > (unsigned int)blockCount)
+			{
+				/* The device reports more left unread than was
+				 * requested: the sense data is inconsistent, so treat it
+				 * like any other read error.
+				 */
+				fprintf(stderr, "scsitape: device reported residual %u larger than request %d\n",
+						uinfo, blockCount);
+				PrintRequestSense(&RequestSense);
+				exit(1);
+			}
+			else
+			{
+				info = (int)uinfo;
+			}
 
 			/* Now set *len to # of bytes read. */
 			*len= bufsize ? (blockCount-info) * bufsize : MAX_READ_SIZE-info ;
